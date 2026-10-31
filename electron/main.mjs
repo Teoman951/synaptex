@@ -5,6 +5,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { compileProject } from "./compiler.mjs";
+import { buildOutline } from "./outline.mjs";
 import { extractZip } from "./zipImport.mjs";
 
 const electronDir = path.dirname(fileURLToPath(import.meta.url));
@@ -186,6 +187,8 @@ function registerProjectHandlers() {
     if (!project) throw new Error("Unknown project");
     return loadProject(project.path);
   });
+
+  ipcMain.handle("project:outline", (_event, mainFile) => buildOutline(mainFile, resolveInProject));
 
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));
 

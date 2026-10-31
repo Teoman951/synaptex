@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
-import type { CompileResult, Engine, OpenedProject } from "@/types/desktop";
+import type { CompileResult, Engine, OpenedProject, OutlineItem } from "@/types/desktop";
 
 export const ENGINES: Engine[] = ["pdflatex", "xelatex", "lualatex"];
 
@@ -35,7 +35,24 @@ export function useProject() {
   const [compileProgress, setCompileProgress] = useState<string | null>(null);
   const [compileResult, setCompileResult] = useState<CompileResult | null>(null);
 
+  const [outline, setOutline] = useState<OutlineItem[]>([]);
+
   const isDirty = content !== savedContent;
+  const mainFile = project?.mainFile ?? null;
+
+  // savedContent is a dependency so the outline follows every save.
+  useEffect(() => {
+    if (!mainFile) return;
+    let cancelled = false;
+    getDesktopApi()
+      ?.outline(mainFile)
+      .then((items) => {
+        if (!cancelled) setOutline(items);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mainFile, savedContent]);
 
   function applyProject(opened: OpenedProject) {
     setProject(opened);
@@ -72,6 +89,7 @@ export function useProject() {
     setSavedContent(INITIAL_DOCUMENT);
     setEngine("pdflatex");
     setCompileResult(null);
+    setOutline([]);
     setError(null);
     setIsOpen(open);
   }
@@ -149,6 +167,7 @@ export function useProject() {
     isCompiling,
     compileProgress,
     compileResult,
+    outline,
     openFile: () => openWith(() => getDesktopApi()?.openFile()),
     openFolder: () => openWith(() => getDesktopApi()?.openFolder()),
     openRecent: (id: string) => openWith(() => getDesktopApi()?.openRecent(id)),

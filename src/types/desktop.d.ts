@@ -17,10 +17,24 @@ export interface RecentProject {
   openedAt: number;
 }
 
+export interface CompileError {
+  message: string;
+  // Null when the error lies outside the project or has no location.
+  file: string | null;
+  line: number | null;
+}
+
+export interface OutlineItem {
+  title: string;
+  level: number;
+  line: number;
+  file: string;
+}
+
 export interface CompileResult {
   ok: boolean;
   pdf: Uint8Array | null;
-  errors: string[];
+  errors: CompileError[];
   log: string;
 }
 
@@ -32,6 +46,7 @@ export interface SynaptexDesktopApi {
   importZip: () => Promise<OpenedProject | null>;
   recentProjects: () => Promise<RecentProject[]>;
   openRecent: (id: string) => Promise<OpenedProject>;
+  outline: (mainFile: string) => Promise<OutlineItem[]>;
   readFile: (file: string) => Promise<string>;
   writeFile: (file: string, content: string) => Promise<void>;
   saveAs: (content: string) => Promise<OpenedProject | null>;

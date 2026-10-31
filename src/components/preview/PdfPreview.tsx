@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ENGINES } from "@/state/useProject";
-import type { CompileResult, Engine } from "@/types/desktop";
+import type { CompileError, CompileResult, Engine } from "@/types/desktop";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
@@ -50,6 +50,26 @@ async function renderPdf(
   return pageCount;
 }
 
+function ProblemItem({
+  error,
+  onSelect,
+}: {
+  error: CompileError;
+  onSelect: (file: string, line: number) => void;
+}) {
+  const { file, line, message } = error;
+  if (file === null || line === null) return message;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(file, line)}
+      className="w-full py-0.5 text-left hover:underline"
+    >
+      {file}:{line}: {message}
+    </button>
+  );
+}
+
 interface PdfPreviewProps {
   result: CompileResult | null;
   onRenderError: () => void;
@@ -58,6 +78,7 @@ interface PdfPreviewProps {
   isCompiling: boolean;
   compileProgress: string | null;
   onCompile: () => void;
+  onSelectError: (file: string, line: number) => void;
   autoCompile: boolean;
   onAutoCompileChange: (enabled: boolean) => void;
 }
@@ -70,6 +91,7 @@ export function PdfPreview({
   isCompiling,
   compileProgress,
   onCompile,
+  onSelectError,
   autoCompile,
   onAutoCompileChange,
 }: PdfPreviewProps) {
@@ -167,7 +189,9 @@ export function PdfPreview({
           </summary>
           <ul role="alert" className="max-h-40 overflow-auto px-3 pb-3 font-mono text-xs text-red-400">
             {result.errors.map((error) => (
-              <li key={error}>{error}</li>
+              <li key={`${error.file}:${error.line}:${error.message}`}>
+                <ProblemItem error={error} onSelect={onSelectError} />
+              </li>
             ))}
           </ul>
         </details>

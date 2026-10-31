@@ -1,13 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { EditorView } from "@uiw/react-codemirror";
 import { PaneHeader } from "@/components/layout/PaneHeader";
 import { ProjectHome } from "@/components/layout/ProjectHome";
 import { ProjectSidebar } from "@/components/layout/ProjectSidebar";
 import { PdfPreview } from "@/components/preview/PdfPreview";
-import { parseOutline } from "@/lib/outline";
 import { useProject } from "@/state/useProject";
 
 // CodeMirror needs the DOM, so it must never render during the static export.
@@ -38,7 +37,6 @@ export function Workspace() {
   const onEditorReady = useCallback((view: EditorView) => {
     editorRef.current = view;
   }, []);
-  const outline = useMemo(() => parseOutline(content), [content]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -75,12 +73,16 @@ export function Workspace() {
     return () => clearTimeout(timer);
   });
 
-  function jumpToLine(line: number) {
-    const view = editorRef.current;
-    if (!view) return;
-    const { from } = view.state.doc.line(line);
-    view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
-    view.focus();
+  async function jumpTo(file: string, line: number) {
+    if (file !== project.activeFile) await project.selectFile(file);
+    // The editor receives a newly loaded file on the next frame.
+    requestAnimationFrame(() => {
+      const view = editorRef.current;
+      if (!view) return;
+      const { from } = view.state.doc.line(Math.min(line, view.state.doc.lines));
+      view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
+      view.focus();
+    });
   }
 
   if (!project.isOpen) {
@@ -111,12 +113,12 @@ export function Workspace() {
           files={project.project?.files ?? [project.activeFile]}
           activeFile={project.activeFile}
           mainFile={project.project?.mainFile ?? null}
-          outline={outline}
+          outline={project.outline}
           onBack={project.close}
           onSave={save}
           onSaveAs={saveAs}
           onSelectFile={project.selectFile}
-          onSelectOutline={jumpToLine}
+          onSelectOutline={jumpTo}
         />
         <section className="flex min-h-0 min-w-0 flex-1 flex-col border-r border-line bg-black">
           <PaneHeader title={project.isDirty ? `${project.activeFile} •` : project.activeFile} />
@@ -133,6 +135,7 @@ export function Workspace() {
             isCompiling={project.isCompiling}
             compileProgress={project.compileProgress}
             onCompile={startCompile}
+            onSelectError={jumpTo}
             autoCompile={autoCompile}
             onAutoCompileChange={changeAutoCompile}
           />

@@ -1,5 +1,5 @@
 import { FileList } from "@/components/layout/FileList";
-import type { OutlineItem } from "@/lib/outline";
+import type { OutlineItem } from "@/types/desktop";
 
 interface ProjectSidebarProps {
   name: string;
@@ -11,7 +11,7 @@ interface ProjectSidebarProps {
   onSave: () => void;
   onSaveAs: () => void;
   onSelectFile: (file: string) => void;
-  onSelectOutline: (line: number) => void;
+  onSelectOutline: (file: string, line: number) => void;
 }
 
 export function ProjectSidebar({
@@ -59,10 +59,10 @@ export function ProjectSidebar({
         {outline.length === 0 && <p className="px-3 text-xs text-muted">Keine Abschnitte.</p>}
         {outline.map((item) => (
           <button
-            key={item.line}
+            key={`${item.file}:${item.line}`}
             type="button"
             title={item.title}
-            onClick={() => onSelectOutline(item.line)}
+            onClick={() => onSelectOutline(item.file, item.line)}
             style={{ paddingLeft: `${12 + item.level * 12}px` }}
             className="block w-full truncate py-1 pr-3 text-left text-xs text-muted hover:text-accent"
           >

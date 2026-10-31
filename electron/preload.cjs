@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   importZip: () => ipcRenderer.invoke("project:import-zip"),
   recentProjects: () => ipcRenderer.invoke("project:recent"),
   openRecent: (id) => ipcRenderer.invoke("project:open-recent", id),
+  outline: (mainFile) => ipcRenderer.invoke("project:outline", mainFile),
   readFile: (file) => ipcRenderer.invoke("project:read", file),
   writeFile: (file, content) => ipcRenderer.invoke("project:write", file, content),
   saveAs: (content) => ipcRenderer.invoke("project:save-as", content),

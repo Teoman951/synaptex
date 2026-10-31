@@ -44,15 +44,16 @@ async function mirrorFolders(from, to) {
 }
 
 function parseErrors(log) {
-  const lines = log.split(/\r?\n/);
-  const errors = [];
-  lines.forEach((line, index) => {
-    if (!line.startsWith("! ")) return;
-    const location = lines.slice(index, index + 12).find((l) => /^l\.\d+/.test(l));
-    const lineNumber = location?.match(/^l\.(\d+)/)?.[1];
-    errors.push(lineNumber ? `Zeile ${lineNumber}: ${line.slice(2)}` : line.slice(2));
-  });
-  return [...new Set(errors)];
+  const errors = new Map();
+  for (const line of log.split(/\r?\n/)) {
+    const match = line.match(/^(.+?\.(?:tex|sty|cls)):(\d+): (.*)$/);
+    if (!match) continue;
+    const file = path.posix.normalize(match[1].replaceAll("\\", "/"));
+    const inProject = !path.posix.isAbsolute(file) && !/^[a-z]:/i.test(file) && !file.startsWith("..");
+    const error = { message: match[3], file: inProject ? file : null, line: Number(match[2]) };
+    errors.set(`${file}:${error.line}:${error.message}`, error);
+  }
+  return [...errors.values()];
 }
 
 async function runBibliography(baseName, projectDir, outputDir) {
@@ -84,6 +85,7 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   const args = [
     "-interaction=nonstopmode",
     "-no-shell-escape",
+    "-file-line-error",
     `-output-directory=${outputDir}`,
     ...(tool.toLowerCase().includes("miktex") ? ["--enable-installer"] : []),
     mainFile,
@@ -93,16 +95,16 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   let log = "";
   for (let pass = 1; pass <= MAX_ENGINE_RUNS; pass++) {
     onProgress(`Durchlauf ${pass}`);
-    result = await run(tool, args, { cwd: projectDir }, (output) => {
+    result = await run(tool, args, { cwd: projectDir, env: { ...process.env, max_print_line: "100000" } }, (output) => {
       // Finished pages appear as [n] in the engine output.
       const page = [...output.matchAll(/\[(\d+)[\s\]{<]/g)].at(-1)?.[1];
       if (page) onProgress(`Durchlauf ${pass}, Seite ${page}`);
     });
     if (result.error?.code === "ENOENT") {
-      return { ok: false, pdf: null, errors: ["Kein LaTeX-Compiler gefunden."], log: "" };
+      return { ok: false, pdf: null, errors: [{ message: "Kein LaTeX-Compiler gefunden.", file: null, line: null }], log: "" };
     }
     if (result.error?.killed) {
-      return { ok: false, pdf: null, errors: ["Zeitlimit beim Kompilieren überschritten."], log: result.output };
+      return { ok: false, pdf: null, errors: [{ message: "Zeitlimit beim Kompilieren überschritten.", file: null, line: null }], log: result.output };
     }
     log = result.output;
 
@@ -118,6 +120,6 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   const pdfPath = path.join(outputDir, `${baseName}.pdf`);
   const pdf = existsSync(pdfPath) ? await readFile(pdfPath) : null;
   const errors = parseErrors(log);
-  if (!pdf && errors.length === 0) errors.push("Es wurde kein PDF erzeugt.");
+  if (!pdf && errors.length === 0) errors.push({ message: "Es wurde kein PDF erzeugt.", file: null, line: null });
   return { ok: Boolean(pdf) && errors.length === 0, pdf, errors, log };
 }
