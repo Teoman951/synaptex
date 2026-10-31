@@ -13,5 +13,10 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   readFile: (file) => ipcRenderer.invoke("project:read", file),
   writeFile: (file, content) => ipcRenderer.invoke("project:write", file, content),
   saveAs: (content) => ipcRenderer.invoke("project:save-as", content),
+  onCompileProgress: (listener) => {
+    const handler = (_event, message) => listener(message);
+    ipcRenderer.on("project:compile-progress", handler);
+    return () => ipcRenderer.off("project:compile-progress", handler);
+  },
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

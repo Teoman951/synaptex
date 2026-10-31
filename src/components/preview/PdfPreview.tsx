@@ -8,6 +8,9 @@ const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.25;
 
+// The pdf.js worker is shared, and overlapping documents can stall it.
+let renderQueue: Promise<number | null> = Promise.resolve(null);
+
 async function renderPdf(
   data: Uint8Array,
   container: HTMLElement,
@@ -53,7 +56,10 @@ interface PdfPreviewProps {
   engine: Engine;
   onEngineChange: (engine: Engine) => void;
   isCompiling: boolean;
+  compileProgress: string | null;
   onCompile: () => void;
+  autoCompile: boolean;
+  onAutoCompileChange: (enabled: boolean) => void;
 }
 
 export function PdfPreview({
@@ -62,7 +68,10 @@ export function PdfPreview({
   engine,
   onEngineChange,
   isCompiling,
+  compileProgress,
   onCompile,
+  autoCompile,
+  onAutoCompileChange,
 }: PdfPreviewProps) {
   const pagesRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -77,9 +86,13 @@ export function PdfPreview({
       return;
     }
     let cancelled = false;
-    renderPdf(pdf, container, zoom, () => cancelled)
+    const render = renderQueue.then(() =>
+      cancelled ? null : renderPdf(pdf, container, zoom, () => cancelled),
+    );
+    renderQueue = render.catch(() => null);
+    render
       .then((count) => {
-        if (!cancelled) setPageCount(count);
+        if (count !== null && !cancelled) setPageCount(count);
       })
       .catch(onRenderError);
     return () => {
@@ -110,8 +123,20 @@ export function PdfPreview({
             <option key={name}>{name}</option>
           ))}
         </select>
+        <label
+          title="Kompiliert kurz nach der letzten Eingabe"
+          className="flex items-center gap-1 text-xs text-muted"
+        >
+          <input
+            type="checkbox"
+            checked={autoCompile}
+            onChange={(event) => onAutoCompileChange(event.target.checked)}
+            className="accent-accent"
+          />
+          Auto
+        </label>
         <span className="ml-auto text-xs text-muted">
-          {pdf ? `${pageCount} ${pageCount === 1 ? "Seite" : "Seiten"}` : ""}
+          {compileProgress ?? (pdf ? `${pageCount} ${pageCount === 1 ? "Seite" : "Seiten"}` : "")}
         </span>
         <button
           type="button"
@@ -134,14 +159,19 @@ export function PdfPreview({
         </button>
       </div>
 
-      {result && result.errors.length > 0 && (
-        <ul role="alert" className="max-h-40 shrink-0 overflow-auto border-b border-line p-3 font-mono text-xs text-red-400">
-          {result.errors.map((error) => (
-            <li key={error}>{error}</li>
-          ))}
-        </ul>
-      )}
       <div ref={pagesRef} className="min-h-0 flex-1 overflow-auto p-4" />
+      {result && result.errors.length > 0 && (
+        <details open className="shrink-0 border-t border-line bg-surface">
+          <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-red-400">
+            {result.errors.length} {result.errors.length === 1 ? "Problem" : "Probleme"}
+          </summary>
+          <ul role="alert" className="max-h-40 overflow-auto px-3 pb-3 font-mono text-xs text-red-400">
+            {result.errors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+        </details>
+      )}
       {!pdf && (
         <p className="absolute inset-x-0 top-1/2 text-center text-sm text-muted">
           {result ? "Kein PDF erzeugt." : "Noch kein PDF kompiliert."}

@@ -204,13 +204,14 @@ function registerProjectHandlers() {
     return loadProject(path.dirname(filePath), path.basename(filePath));
   });
 
-  ipcMain.handle("project:compile", (_event, mainFile, engine) => {
+  ipcMain.handle("project:compile", (event, mainFile, engine) => {
     resolveInProject(mainFile);
     return compileProject({
       projectDir: projectRoot,
       mainFile,
       engine,
       outputDir: path.join(app.getPath("userData"), "build"),
+      onProgress: (message) => event.sender.send("project:compile-progress", message),
     });
   });
 }

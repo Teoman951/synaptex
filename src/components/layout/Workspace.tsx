@@ -15,10 +15,24 @@ const LatexEditor = dynamic(() => import("@/components/editor/LatexEditor"), {
   ssr: false,
 });
 
+const AUTO_COMPILE_KEY = "synaptex.autoCompile";
+const AUTO_SAVE_DELAY_MS = 1500;
+
+function readAutoCompile() {
+  try {
+    return window.localStorage.getItem(AUTO_COMPILE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export function Workspace() {
   const project = useProject();
   const { save, saveAs, content } = project;
   const [renderFailed, setRenderFailed] = useState(false);
+  const [autoCompile, setAutoCompile] = useState(
+    () => typeof window !== "undefined" && readAutoCompile(),
+  );
   const onRenderError = useCallback(() => setRenderFailed(true), []);
   const editorRef = useRef<EditorView | null>(null);
   const onEditorReady = useCallback((view: EditorView) => {
@@ -37,6 +51,28 @@ export function Workspace() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
+  function startCompile() {
+    setRenderFailed(false);
+    project.compile();
+  }
+
+  function changeAutoCompile(enabled: boolean) {
+    setAutoCompile(enabled);
+    try {
+      window.localStorage.setItem(AUTO_COMPILE_KEY, String(enabled));
+    } catch {
+      // The toggle still works for this session.
+    }
+  }
+
+  // Saving clears isDirty, and compiling saves first, so this cannot loop.
+  // Runs after every render, which restarts the delay on each keystroke.
+  useEffect(() => {
+    if (!project.project || !project.isDirty || project.isCompiling) return;
+    const timer = setTimeout(autoCompile ? startCompile : save, AUTO_SAVE_DELAY_MS);
+    return () => clearTimeout(timer);
   });
 
   function jumpToLine(line: number) {
@@ -95,10 +131,10 @@ export function Workspace() {
             engine={project.engine}
             onEngineChange={project.setEngine}
             isCompiling={project.isCompiling}
-            onCompile={() => {
-              setRenderFailed(false);
-              project.compile();
-            }}
+            compileProgress={project.compileProgress}
+            onCompile={startCompile}
+            autoCompile={autoCompile}
+            onAutoCompileChange={changeAutoCompile}
           />
         </section>
       </main>

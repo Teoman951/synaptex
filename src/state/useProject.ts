@@ -32,6 +32,7 @@ export function useProject() {
   const [engine, setEngine] = useState<Engine>("pdflatex");
   const [error, setError] = useState<string | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
+  const [compileProgress, setCompileProgress] = useState<string | null>(null);
   const [compileResult, setCompileResult] = useState<CompileResult | null>(null);
 
   const isDirty = content !== savedContent;
@@ -123,9 +124,13 @@ export function useProject() {
       const mainFile = opened?.mainFile;
       if (!mainFile) throw new Error("No main file");
       setIsCompiling(true);
+      setCompileProgress("Wird gestartet");
+      const stopListening = api.onCompileProgress(setCompileProgress);
       try {
         setCompileResult(await api.compile(mainFile, opened ? engine : "pdflatex"));
       } finally {
+        stopListening();
+        setCompileProgress(null);
         setIsCompiling(false);
       }
     });
@@ -142,6 +147,7 @@ export function useProject() {
     error,
     isDirty,
     isCompiling,
+    compileProgress,
     compileResult,
     openFile: () => openWith(() => getDesktopApi()?.openFile()),
     openFolder: () => openWith(() => getDesktopApi()?.openFolder()),

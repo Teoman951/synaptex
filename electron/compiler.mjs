@@ -5,7 +5,8 @@ import path from "node:path";
 
 export const ENGINES = ["pdflatex", "xelatex", "lualatex"];
 
-const RUN_TIMEOUT_MS = 180_000;
+// The first run may download packages, which takes minutes.
+const RUN_TIMEOUT_MS = 600_000;
 const MAX_ENGINE_RUNS = 4;
 
 // Apps started before a TeX install still have the old PATH.
@@ -20,14 +21,15 @@ function findTool(name) {
   return name;
 }
 
-function run(tool, args, options) {
+function run(tool, args, options, onOutput) {
   return new Promise((resolve) => {
-    execFile(
+    const child = execFile(
       tool,
       args,
       { ...options, timeout: RUN_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024, windowsHide: true },
       (error, stdout, stderr) => resolve({ error, output: `${stdout}${stderr}` }),
     );
+    if (onOutput) child.stdout.on("data", (chunk) => onOutput(String(chunk)));
   });
 }
 
@@ -71,7 +73,7 @@ async function runBibliography(baseName, projectDir, outputDir) {
 
 // The compiler contract: project folder in, PDF and log out. Other backends
 // (Tectonic, a remote server) implement the same function.
-export async function compileProject({ projectDir, mainFile, engine, outputDir }) {
+export async function compileProject({ projectDir, mainFile, engine, outputDir, onProgress = () => {} }) {
   if (!ENGINES.includes(engine)) throw new Error(`Unknown engine: ${engine}`);
 
   await rm(outputDir, { recursive: true, force: true });
@@ -90,7 +92,12 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir }
   let result;
   let log = "";
   for (let pass = 1; pass <= MAX_ENGINE_RUNS; pass++) {
-    result = await run(tool, args, { cwd: projectDir });
+    onProgress(`Durchlauf ${pass}`);
+    result = await run(tool, args, { cwd: projectDir }, (output) => {
+      // Finished pages appear as [n] in the engine output.
+      const page = [...output.matchAll(/\[(\d+)[\s\]{<]/g)].at(-1)?.[1];
+      if (page) onProgress(`Durchlauf ${pass}, Seite ${page}`);
+    });
     if (result.error?.code === "ENOENT") {
       return { ok: false, pdf: null, errors: ["Kein LaTeX-Compiler gefunden."], log: "" };
     }
@@ -100,6 +107,7 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir }
     log = result.output;
 
     if (pass === 1) {
+      onProgress("Literaturverzeichnis");
       const bibliography = await runBibliography(baseName, projectDir, outputDir);
       if (bibliography) log += bibliography.output;
     } else if (!/Rerun to get|Label\(s\) may have changed/.test(result.output)) {

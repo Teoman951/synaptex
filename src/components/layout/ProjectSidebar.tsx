@@ -71,14 +71,6 @@ export function ProjectSidebar({
         ))}
       </nav>
 
-      <button
-        type="button"
-        disabled
-        title="Noch nicht verfügbar"
-        className="cursor-not-allowed border-t border-line p-3 text-left text-xs text-muted/60"
-      >
-        Excel importieren
-      </button>
     </aside>
   );
 }

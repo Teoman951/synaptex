@@ -35,6 +35,8 @@ export interface SynaptexDesktopApi {
   readFile: (file: string) => Promise<string>;
   writeFile: (file: string, content: string) => Promise<void>;
   saveAs: (content: string) => Promise<OpenedProject | null>;
+  // Returns a function that stops listening.
+  onCompileProgress: (listener: (message: string) => void) => () => void;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 
