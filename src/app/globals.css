@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-canvas: #0d0d0e;
+  --color-surface: #1c1c1e;
+  --color-line: #2c2c2f;
+  --color-foreground: #e4e7ec;
+  --color-muted: #8e8e93;
+  --color-accent: #6ea8fe;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-foreground);
+  color-scheme: dark;
+  overflow: hidden;
+}
+
+.cm-editor .cm-scroller {
+  font-family: var(--font-mono);
+}
+
+.cm-editor,
+.cm-editor .cm-gutters {
+  background: #000 !important;
+}
