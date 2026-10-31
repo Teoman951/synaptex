@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
+import { hintFor } from "@/lib/latexErrorHints";
 import { ENGINES } from "@/state/useProject";
 import type { CompileError, CompileResult, Engine } from "@/types/desktop";
 
@@ -71,15 +72,22 @@ function ProblemItem({
   onSelect: (file: string, line: number) => void;
 }) {
   const { file, line, message } = error;
-  if (file === null || line === null) return message;
+  const hint = hintFor(message);
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(file, line)}
-      className="w-full py-0.5 text-left hover:underline"
-    >
-      {file}:{line}: {message}
-    </button>
+    <>
+      {file === null || line === null ? (
+        message
+      ) : (
+        <button
+          type="button"
+          onClick={() => onSelect(file, line)}
+          className="w-full py-0.5 text-left hover:underline"
+        >
+          {file}:{line}: {message}
+        </button>
+      )}
+      {hint && <p className="mb-1 font-sans text-muted">{hint}</p>}
+    </>
   );
 }
 

@@ -103,6 +103,8 @@ export function ChatPanel({ projectName, getContext, onApply }: ChatPanelProps) 
   async function compress() {
     const api = getDesktopApi();
     if (!api || !current) return;
+    const question = "Ältere Nachrichten werden durch eine KI-Zusammenfassung ersetzt und endgültig entfernt. Fortfahren?";
+    if (!window.confirm(question)) return;
     setIsCompressing(true);
     await run(async () => {
       setCurrent(await api.compressConversation(current.id));

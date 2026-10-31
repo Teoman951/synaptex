@@ -264,7 +264,6 @@ const SYSTEM_PROMPT =
   "Gib LaTeX-Code, der ins Dokument soll, immer als Codeblock mit drei Backticks aus.";
 const MAX_CONTEXT_CHARS = 6000;
 const RECENT_MESSAGES = 8;
-const COMPRESS_AFTER_MESSAGES = 30;
 const KEEP_AFTER_COMPRESS = 4;
 let aiAbort = null;
 
@@ -373,10 +372,7 @@ function registerChatHandlers() {
       if (!aiAbort.signal.aborted) throw error;
     }
     conversation.messages.push({ role: "assistant", content: reply });
-    const saved = await saveConversation(folder, conversation);
-    return saved.messages.length >= COMPRESS_AFTER_MESSAGES
-      ? compressConversation(folder, saved, settings)
-      : saved;
+    return saveConversation(folder, conversation);
   });
 }
 
