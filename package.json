@@ -1,7 +1,6 @@
 {
   "name": "synaptex",
   "version": "0.1.0",
-  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -61,5 +60,7 @@
     "linux": {
       "target": "AppImage"
     }
-  }
+  },
+  "license": "AGPL-3.0-only",
+  "private": true
 }
