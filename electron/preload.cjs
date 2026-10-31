@@ -21,5 +21,19 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   },
   cancelCompile: () => ipcRenderer.invoke("project:cancel-compile"),
   saveThumbnail: (dataUrl) => ipcRenderer.invoke("project:save-thumbnail", dataUrl),
+  aiConfigured: () => ipcRenderer.invoke("ai:configured"),
+  configureAi: () => ipcRenderer.invoke("ai:configure"),
+  cancelAi: () => ipcRenderer.invoke("ai:cancel"),
+  onAiToken: (listener) => {
+    const handler = (_event, token) => listener(token);
+    ipcRenderer.on("ai:token", handler);
+    return () => ipcRenderer.off("ai:token", handler);
+  },
+  listConversations: () => ipcRenderer.invoke("chat:list"),
+  createConversation: () => ipcRenderer.invoke("chat:create"),
+  loadConversation: (id) => ipcRenderer.invoke("chat:load", id),
+  deleteConversation: (id) => ipcRenderer.invoke("chat:delete", id),
+  compressConversation: (id) => ipcRenderer.invoke("chat:compress", id),
+  sendMessage: (id, text, context) => ipcRenderer.invoke("chat:send", id, text, context),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

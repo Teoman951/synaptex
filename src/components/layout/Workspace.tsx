@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EditorView } from "@uiw/react-codemirror";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { PaneHeader } from "@/components/layout/PaneHeader";
 import { ProjectHome } from "@/components/layout/ProjectHome";
 import { ProjectSidebar } from "@/components/layout/ProjectSidebar";
@@ -73,6 +74,23 @@ export function Workspace() {
     return () => clearTimeout(timer);
   });
 
+  function getEditorContext() {
+    const view = editorRef.current;
+    if (!view) return content;
+    const { from, to } = view.state.selection.main;
+    return from === to ? content : view.state.sliceDoc(from, to);
+  }
+
+  function applyToEditor(code: string) {
+    const view = editorRef.current;
+    if (!view) return;
+    const hasSelection = !view.state.selection.main.empty;
+    const question = hasSelection ? "Markierten Text ersetzen?" : "An der Cursorposition einfügen?";
+    if (!window.confirm(question)) return;
+    view.dispatch(view.state.replaceSelection(code));
+    view.focus();
+  }
+
   async function jumpTo(file: string, line: number) {
     if (file !== project.activeFile) await project.selectFile(file);
     // The editor receives a newly loaded file on the next frame.
@@ -109,6 +127,13 @@ export function Workspace() {
       )}
       <main className="flex min-h-0 flex-1">
         <ProjectSidebar
+          chat={
+            <ChatPanel
+              projectName={project.project?.name ?? null}
+              getContext={getEditorContext}
+              onApply={applyToEditor}
+            />
+          }
           name={project.project?.name ?? "Neues Projekt"}
           files={project.project?.files ?? [project.activeFile]}
           activeFile={project.activeFile}

@@ -18,6 +18,27 @@ export interface RecentProject {
   thumbnail: string | null;
 }
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  updatedAt: number;
+  summary: string | null;
+  messages: ChatMessage[];
+}
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  updatedAt: number;
+  messageCount: number;
+  bytes: number;
+}
+
 export interface CompileError {
   message: string;
   // Null when the error lies outside the project or has no location.
@@ -56,6 +77,16 @@ export interface SynaptexDesktopApi {
   onCompileProgress: (listener: (message: string) => void) => () => void;
   cancelCompile: () => Promise<void>;
   saveThumbnail: (dataUrl: string) => Promise<void>;
+  aiConfigured: () => Promise<boolean>;
+  configureAi: () => Promise<boolean>;
+  cancelAi: () => Promise<void>;
+  onAiToken: (listener: (token: string) => void) => () => void;
+  listConversations: () => Promise<ConversationSummary[]>;
+  createConversation: () => Promise<Conversation>;
+  loadConversation: (id: string) => Promise<Conversation>;
+  deleteConversation: (id: string) => Promise<void>;
+  compressConversation: (id: string) => Promise<Conversation>;
+  sendMessage: (id: string, text: string, context: string) => Promise<Conversation>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

@@ -87,7 +87,7 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
     "-no-shell-escape",
     "-file-line-error",
     `-output-directory=${outputDir}`,
-    ...(tool.toLowerCase().includes("miktex") ? ["--enable-installer"] : []),
+    ...(tool.toLowerCase().includes("miktex") ? ["--enable-installer", "--max-print-line=100000"] : []),
     mainFile,
   ];
 

@@ -1,7 +1,9 @@
+import { useState, type ReactNode } from "react";
 import { FileList } from "@/components/layout/FileList";
 import type { OutlineItem } from "@/types/desktop";
 
 interface ProjectSidebarProps {
+  chat: ReactNode;
   name: string;
   files: string[];
   activeFile: string;
@@ -15,6 +17,7 @@ interface ProjectSidebarProps {
 }
 
 export function ProjectSidebar({
+  chat,
   name,
   files,
   activeFile,
@@ -26,13 +29,18 @@ export function ProjectSidebar({
   onSelectFile,
   onSelectOutline,
 }: ProjectSidebarProps) {
+  const [tab, setTab] = useState<"files" | "chat">("files");
+  const tabs = [
+    { id: "files", label: "Dateien" },
+    { id: "chat", label: "Unterhaltungen" },
+  ] as const;
   const actions = [
     { label: "Speichern", onClick: onSave },
     { label: "Speichern unter", onClick: onSaveAs },
   ];
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-line">
+    <aside className={`flex shrink-0 flex-col border-r border-line ${tab === "chat" ? "w-96" : "w-60"}`}>
       <div className="border-b border-line p-3">
         <button type="button" onClick={onBack} className="text-xs text-muted hover:text-accent">
           ← Projekte
@@ -49,7 +57,26 @@ export function ProjectSidebar({
         </div>
       </div>
 
-      <h2 className="px-3 pt-3 text-xs font-medium">Dateien</h2>
+      <div role="tablist" className="flex gap-4 border-b border-line px-3 pt-3">
+        {tabs.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={`pb-2 text-xs font-medium ${tab === id ? "border-b border-foreground" : "text-muted"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Stays mounted so a running reply survives switching tabs. */}
+      <div className={`min-h-0 flex-1 flex-col ${tab === "chat" ? "flex" : "hidden"}`}>{chat}</div>
+
+      {tab === "files" && (
+      <>
       <div className="min-h-0 flex-1 overflow-auto">
         <FileList files={files} activeFile={activeFile} mainFile={mainFile} onSelect={onSelectFile} />
       </div>
@@ -70,7 +97,8 @@ export function ProjectSidebar({
           </button>
         ))}
       </nav>
-
+      </>
+      )}
     </aside>
   );
 }
