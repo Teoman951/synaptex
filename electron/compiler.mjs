@@ -56,25 +56,25 @@ function parseErrors(log) {
   return [...errors.values()];
 }
 
-async function runBibliography(baseName, projectDir, outputDir) {
+async function runBibliography(baseName, projectDir, outputDir, signal) {
   const env = { ...process.env, BIBINPUTS: `${projectDir}${path.delimiter}` };
   if (existsSync(path.join(outputDir, `${baseName}.bcf`))) {
     return run(
       findTool("biber"),
       ["--input-directory", projectDir, "--output-directory", outputDir, baseName],
-      { cwd: projectDir, env },
+      { cwd: projectDir, env, signal },
     );
   }
   const aux = await readFile(path.join(outputDir, `${baseName}.aux`), "utf8").catch(() => "");
   if (/\\bibdata|\\citation/.test(aux)) {
-    return run(findTool("bibtex"), [baseName], { cwd: outputDir, env });
+    return run(findTool("bibtex"), [baseName], { cwd: outputDir, env, signal });
   }
   return null;
 }
 
 // The compiler contract: project folder in, PDF and log out. Other backends
 // (Tectonic, a remote server) implement the same function.
-export async function compileProject({ projectDir, mainFile, engine, outputDir, onProgress = () => {} }) {
+export async function compileProject({ projectDir, mainFile, engine, outputDir, signal, onProgress = () => {} }) {
   if (!ENGINES.includes(engine)) throw new Error(`Unknown engine: ${engine}`);
 
   await rm(outputDir, { recursive: true, force: true });
@@ -95,11 +95,12 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   let log = "";
   for (let pass = 1; pass <= MAX_ENGINE_RUNS; pass++) {
     onProgress(`Durchlauf ${pass}`);
-    result = await run(tool, args, { cwd: projectDir, env: { ...process.env, max_print_line: "100000" } }, (output) => {
+    result = await run(tool, args, { cwd: projectDir, signal, env: { ...process.env, max_print_line: "100000" } }, (output) => {
       // Finished pages appear as [n] in the engine output.
       const page = [...output.matchAll(/\[(\d+)[\s\]{<]/g)].at(-1)?.[1];
       if (page) onProgress(`Durchlauf ${pass}, Seite ${page}`);
     });
+    if (signal?.aborted) return { ok: false, cancelled: true, pdf: null, errors: [], log };
     if (result.error?.code === "ENOENT") {
       return { ok: false, pdf: null, errors: [{ message: "Kein LaTeX-Compiler gefunden.", file: null, line: null }], log: "" };
     }
@@ -110,7 +111,7 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
 
     if (pass === 1) {
       onProgress("Literaturverzeichnis");
-      const bibliography = await runBibliography(baseName, projectDir, outputDir);
+      const bibliography = await runBibliography(baseName, projectDir, outputDir, signal);
       if (bibliography) log += bibliography.output;
     } else if (!/Rerun to get|Label\(s\) may have changed/.test(result.output)) {
       break;

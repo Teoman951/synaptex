@@ -96,7 +96,13 @@ export function ProjectHome({
               onClick={() => onOpenRecent(project.id)}
               className="flex w-full items-center gap-4 border-b border-line px-4 py-2 text-left text-sm hover:bg-surface"
             >
-              <span aria-hidden className="h-10 w-7 shrink-0 rounded-sm bg-foreground" />
+              {project.thumbnail ? (
+                // A local data URL, so next/image has nothing to optimize.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={project.thumbnail} alt="" className="h-10 w-7 shrink-0 rounded-sm bg-white object-cover object-top" />
+              ) : (
+                <span aria-hidden className="h-10 w-7 shrink-0 rounded-sm bg-foreground" />
+              )}
               <span className="min-w-0 flex-1 truncate">{project.name}</span>
               <span className="text-xs text-muted">{dateFormat.format(project.openedAt)}</span>
             </button>

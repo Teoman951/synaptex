@@ -19,5 +19,7 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
     ipcRenderer.on("project:compile-progress", handler);
     return () => ipcRenderer.off("project:compile-progress", handler);
   },
+  cancelCompile: () => ipcRenderer.invoke("project:cancel-compile"),
+  saveThumbnail: (dataUrl) => ipcRenderer.invoke("project:save-thumbnail", dataUrl),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

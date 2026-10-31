@@ -15,6 +15,7 @@ export interface RecentProject {
   id: string;
   name: string;
   openedAt: number;
+  thumbnail: string | null;
 }
 
 export interface CompileError {
@@ -33,6 +34,7 @@ export interface OutlineItem {
 
 export interface CompileResult {
   ok: boolean;
+  cancelled?: boolean;
   pdf: Uint8Array | null;
   errors: CompileError[];
   log: string;
@@ -52,6 +54,8 @@ export interface SynaptexDesktopApi {
   saveAs: (content: string) => Promise<OpenedProject | null>;
   // Returns a function that stops listening.
   onCompileProgress: (listener: (message: string) => void) => () => void;
+  cancelCompile: () => Promise<void>;
+  saveThumbnail: (dataUrl: string) => Promise<void>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

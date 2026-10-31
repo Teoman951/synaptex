@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from "electron";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { compileProject } from "./compiler.mjs";
@@ -64,7 +64,17 @@ const TEXT_EXTENSIONS = new Set([".tex", ".bib", ".sty", ".cls", ".bst", ".txt",
 const IGNORED_FOLDERS = new Set(["node_modules"]);
 const FILE_LIMIT = 5000;
 const RECENT_LIMIT = 50;
+const MAX_THUMBNAIL_LENGTH = 500_000;
 let projectRoot = null;
+let compileAbort = null;
+
+function projectId(root) {
+  return createHash("sha256").update(root).digest("hex");
+}
+
+function thumbnailFile(id) {
+  return path.join(app.getPath("userData"), "thumbnails", `${id}.txt`);
+}
 
 function resolveInProject(relativePath) {
   if (!projectRoot || typeof relativePath !== "string") throw new Error("No project open");
@@ -115,7 +125,7 @@ async function readRecentProjects() {
   const projects = JSON.parse(raw).filter((project) => existsSync(project.path));
   return projects.map((project) => ({
     ...project,
-    id: createHash("sha256").update(project.path).digest("hex"),
+    id: projectId(project.path),
   }));
 }
 
@@ -179,8 +189,28 @@ function registerProjectHandlers() {
   });
 
   ipcMain.handle("project:recent", async () =>
-    (await readRecentProjects()).map(({ id, name, openedAt }) => ({ id, name, openedAt })),
+    Promise.all(
+      (await readRecentProjects()).map(async ({ id, name, openedAt }) => ({
+        id,
+        name,
+        openedAt,
+        thumbnail: await readFile(thumbnailFile(id), "utf8").catch(() => null),
+      })),
+    ),
   );
+
+  ipcMain.handle("project:save-thumbnail", async (_event, dataUrl) => {
+    const valid =
+      typeof dataUrl === "string" &&
+      dataUrl.startsWith("data:image/jpeg;base64,") &&
+      dataUrl.length <= MAX_THUMBNAIL_LENGTH;
+    if (!projectRoot || !valid) return;
+    const file = thumbnailFile(projectId(projectRoot));
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, dataUrl, "utf8");
+  });
+
+  ipcMain.handle("project:cancel-compile", () => compileAbort?.abort());
 
   ipcMain.handle("project:open-recent", async (_event, id) => {
     const project = (await readRecentProjects()).find((recent) => recent.id === id);
@@ -207,13 +237,15 @@ function registerProjectHandlers() {
     return loadProject(path.dirname(filePath), path.basename(filePath));
   });
 
-  ipcMain.handle("project:compile", (event, mainFile, engine) => {
+  ipcMain.handle("project:compile", async (event, mainFile, engine) => {
     resolveInProject(mainFile);
+    compileAbort = new AbortController();
     return compileProject({
       projectDir: projectRoot,
       mainFile,
       engine,
       outputDir: path.join(app.getPath("userData"), "build"),
+      signal: compileAbort.signal,
       onProgress: (message) => event.sender.send("project:compile-progress", message),
     });
   });

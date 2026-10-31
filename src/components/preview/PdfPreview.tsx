@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getDesktopApi } from "@/lib/desktop";
 import { ENGINES } from "@/state/useProject";
 import type { CompileError, CompileResult, Engine } from "@/types/desktop";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.25;
+const THUMBNAIL_WIDTH = 120;
+
+function saveThumbnail(page: HTMLCanvasElement) {
+  const thumbnail = window.document.createElement("canvas");
+  thumbnail.width = THUMBNAIL_WIDTH;
+  thumbnail.height = (page.height / page.width) * THUMBNAIL_WIDTH;
+  thumbnail.getContext("2d")?.drawImage(page, 0, 0, thumbnail.width, thumbnail.height);
+  return getDesktopApi()?.saveThumbnail(thumbnail.toDataURL("image/jpeg", 0.7));
+}
 
 // The pdf.js worker is shared, and overlapping documents can stall it.
 let renderQueue: Promise<number | null> = Promise.resolve(null);
@@ -44,7 +54,10 @@ async function renderPdf(
     pages.push(canvas);
   }
 
-  if (!isCancelled()) container.replaceChildren(...pages);
+  if (!isCancelled()) {
+    container.replaceChildren(...pages);
+    if (pages[0]) await saveThumbnail(pages[0]);
+  }
   const pageCount = document.numPages;
   await loadingTask.destroy();
   return pageCount;
@@ -78,6 +91,7 @@ interface PdfPreviewProps {
   isCompiling: boolean;
   compileProgress: string | null;
   onCompile: () => void;
+  onCancelCompile: () => void;
   onSelectError: (file: string, line: number) => void;
   autoCompile: boolean;
   onAutoCompileChange: (enabled: boolean) => void;
@@ -91,6 +105,7 @@ export function PdfPreview({
   isCompiling,
   compileProgress,
   onCompile,
+  onCancelCompile,
   onSelectError,
   autoCompile,
   onAutoCompileChange,
@@ -135,6 +150,15 @@ export function PdfPreview({
         >
           {isCompiling ? "Kompiliert..." : "PDF kompilieren"}
         </button>
+        {isCompiling && (
+          <button
+            type="button"
+            onClick={onCancelCompile}
+            className="rounded-lg border border-line px-3 py-1 text-xs hover:text-accent"
+          >
+            Abbrechen
+          </button>
+        )}
         <select
           aria-label="LaTeX-Compiler"
           value={engine}

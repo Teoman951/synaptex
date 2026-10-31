@@ -145,7 +145,9 @@ export function useProject() {
       setCompileProgress("Wird gestartet");
       const stopListening = api.onCompileProgress(setCompileProgress);
       try {
-        setCompileResult(await api.compile(mainFile, opened ? engine : "pdflatex"));
+        const result = await api.compile(mainFile, opened ? engine : "pdflatex");
+        // A cancelled run leaves the last PDF in place.
+        if (!result.cancelled) setCompileResult(result);
       } finally {
         stopListening();
         setCompileProgress(null);
@@ -178,5 +180,6 @@ export function useProject() {
     saveAs,
     selectFile,
     compile,
+    cancelCompile: () => getDesktopApi()?.cancelCompile(),
   };
 }

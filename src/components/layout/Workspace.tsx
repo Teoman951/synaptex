@@ -135,6 +135,7 @@ export function Workspace() {
             isCompiling={project.isCompiling}
             compileProgress={project.compileProgress}
             onCompile={startCompile}
+            onCancelCompile={project.cancelCompile}
             onSelectError={jumpTo}
             autoCompile={autoCompile}
             onAutoCompileChange={changeAutoCompile}
