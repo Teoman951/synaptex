@@ -54,6 +54,7 @@ export interface EditTarget {
 export interface EditorContext {
   file: string;
   text: string;
+  contextTokens: number;
 }
 
 export interface ChatMessage {
@@ -177,7 +178,8 @@ export interface SynaptexDesktopApi {
   mcpConnect: () => Promise<void>;
   mcpDisconnect: () => Promise<void>;
   mcpShare: (id: string, shared: boolean) => Promise<void>;
-  exportZip: () => Promise<void>;
+  exportZip: (id?: string) => Promise<void>;
+  revealProject: (id: string) => Promise<void>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

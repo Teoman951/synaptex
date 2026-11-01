@@ -324,13 +324,20 @@ function registerProjectHandlers() {
     return matches;
   });
 
-  ipcMain.handle("project:export-zip", async (event) => {
-    if (!projectRoot) return;
+  ipcMain.handle("project:export-zip", async (event, id) => {
+    const recent = (await readRecentProjects()).find((project) => project.id === id);
+    const root = recent?.path ?? projectRoot;
+    if (!root) return;
     const { canceled, filePath } = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), {
-      defaultPath: `${path.basename(projectRoot)}.zip`,
+      defaultPath: `${path.basename(root)}.zip`,
       filters: [{ name: text("zipFilter"), extensions: ["zip"] }],
     });
-    if (!canceled && filePath) await exportZip(projectRoot, filePath);
+    if (!canceled && filePath) await exportZip(root, filePath);
+  });
+
+  ipcMain.handle("project:reveal", async (_event, id) => {
+    const project = (await readRecentProjects()).find((item) => item.id === id);
+    if (project) await shell.openPath(project.path);
   });
 
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));
@@ -375,6 +382,8 @@ function systemPrompt() {
   );
 }
 const MAX_CONTEXT_CHARS = 6000;
+const CONTEXT_SIZES = new Set([4096, 8192, 16384]);
+const CHARS_PER_CONTEXT_TOKEN = 1.5;
 const RECENT_MESSAGES = 8;
 const KEEP_AFTER_COMPRESS = 4;
 let aiAbort = null;
@@ -430,13 +439,13 @@ function conversationsFolder() {
 }
 
 // Small models overlook system messages, so the text sits in the question itself.
-function promptFor(conversation, { file, text }) {
+function promptFor(conversation, { file, text, contextTokens }) {
   const system = conversation.summary
     ? `${systemPrompt()}\n\nConversation so far: ${conversation.summary}`
     : systemPrompt();
   const recent = conversation.messages.slice(-RECENT_MESSAGES);
   const question = recent.at(-1);
-  const excerpt = String(text).slice(0, MAX_CONTEXT_CHARS);
+  const excerpt = String(text).slice(0, Number(contextTokens) * CHARS_PER_CONTEXT_TOKEN);
   return [
     { role: "system", content: system },
     ...recent.slice(0, -1),
@@ -675,7 +684,8 @@ function registerChatHandlers() {
     aiAbort = new AbortController();
     let reply = "";
     try {
-      await complete(settings, promptFor(conversation, context), {
+      if (!CONTEXT_SIZES.has(context.contextTokens)) throw new Error("Invalid context size");
+      await complete({ ...settings, contextSize: context.contextTokens }, promptFor(conversation, context), {
         signal: aiAbort.signal,
         onToken: (token) => {
           reply += token;

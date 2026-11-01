@@ -2,6 +2,7 @@
 
 import { t } from "@/lib/i18n";
 import { useCallback, useEffect, useState } from "react";
+import { CONTEXT_OPTIONS, readContextTokens, storeContextTokens } from "@/lib/contextSize";
 import { getDesktopApi } from "@/lib/desktop";
 import type { AiModel, CatalogModel, DownloadProgress, ModelOverview } from "@/types/desktop";
 
@@ -13,6 +14,7 @@ export function ModelPicker() {
   const [overview, setOverview] = useState<ModelOverview | null>(null);
   const [catalog, setCatalog] = useState<CatalogModel[]>([]);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
+  const [contextTokens, setContextTokens] = useState(readContextTokens);
   const [downloadError, setDownloadError] = useState(false);
 
   const load = useCallback(async () => {
@@ -68,6 +70,25 @@ export function ModelPicker() {
 
   return (
     <div className="max-w-2xl p-4 text-xs">
+      <label className="flex items-center gap-2 py-2">
+        <span className="text-muted">{t("contextSize")}</span>
+        <select
+          value={contextTokens}
+          onChange={(event) => {
+            const tokens = Number(event.target.value);
+            setContextTokens(tokens);
+            storeContextTokens(tokens);
+          }}
+          className="rounded border border-line bg-surface px-2 py-1"
+        >
+          {CONTEXT_OPTIONS.map(({ tokens, label }) => (
+            <option key={tokens} value={tokens}>
+              {t(label)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="pb-2 text-muted">{t("contextSizeHint")}</p>
       <p className="py-2 text-muted">{t("active")} <span className="text-foreground">{active?.name ?? t("noneSelected")}</span></p>
       {(
         <div>

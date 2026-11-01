@@ -139,4 +139,11 @@ export const tr: Record<string, string> = {
   mcpOff: "Bağlı değil",
   mcpWaiting: "Kuruldu, Claude henüz erişmedi",
   mcpActive: "Bağlı, son erişim: {time}",
+  projectMenu: "Proje menüsü",
+  showInFolder: "Klasörde göster",
+  contextSize: "Bağlam boyutu",
+  contextSmall: "Küçük (4K, yaklaşık 3 sayfa)",
+  contextMedium: "Orta (8K, yaklaşık 6 sayfa)",
+  contextLarge: "Büyük (16K, yaklaşık 12 sayfa)",
+  contextSizeHint: "Daha fazla bağlam daha çok bellek gerektirir ve yanıtları yavaşlatır.",
 };

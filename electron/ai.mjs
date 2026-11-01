@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 
-const CONTEXT_SIZE = "4096";
+const DEFAULT_CONTEXT_SIZE = 8192;
 const START_TIMEOUT_MS = 120_000;
 
 let server = null;
@@ -35,20 +35,21 @@ export function stopServer() {
 }
 
 // The server only listens on loopback, so documents never leave the machine.
-async function ensureServer({ serverPath, modelPath }) {
-  if (server?.modelPath === modelPath) return server.port;
+async function ensureServer({ serverPath, modelPath, contextSize }) {
+  const size = contextSize ?? server?.contextSize ?? DEFAULT_CONTEXT_SIZE;
+  if (server?.modelPath === modelPath && server.contextSize === size) return server.port;
   stopServer();
 
   const port = await findFreePort();
   const process = spawn(
     serverPath,
-    ["-m", modelPath, "--host", "127.0.0.1", "--port", String(port), "-c", CONTEXT_SIZE],
+    ["-m", modelPath, "--host", "127.0.0.1", "--port", String(port), "-c", String(size)],
     { stdio: "ignore", windowsHide: true },
   );
   process.once("exit", () => {
     if (server?.process === process) server = null;
   });
-  server = { process, port, modelPath };
+  server = { process, port, modelPath, contextSize: size };
   await waitUntilHealthy(port);
   return port;
 }

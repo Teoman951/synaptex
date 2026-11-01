@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   mcpConnect: () => ipcRenderer.invoke("mcp:connect"),
   mcpDisconnect: () => ipcRenderer.invoke("mcp:disconnect"),
   mcpShare: (id, shared) => ipcRenderer.invoke("mcp:share", id, shared),
-  exportZip: () => ipcRenderer.invoke("project:export-zip"),
+  exportZip: (id) => ipcRenderer.invoke("project:export-zip", id),
+  revealProject: (id) => ipcRenderer.invoke("project:reveal", id),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

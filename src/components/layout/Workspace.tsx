@@ -9,6 +9,7 @@ import { PaneHeader } from "@/components/layout/PaneHeader";
 import { ProjectHome } from "@/components/layout/ProjectHome";
 import { ProjectSidebar } from "@/components/layout/ProjectSidebar";
 import { PdfPreview } from "@/components/preview/PdfPreview";
+import { contextChars, readContextTokens } from "@/lib/contextSize";
 import { getDesktopApi } from "@/lib/desktop";
 import { useProject } from "@/state/useProject";
 import type { EditTarget } from "@/types/desktop";
@@ -20,7 +21,6 @@ const LatexEditor = dynamic(() => import("@/components/editor/LatexEditor"), {
 
 const AUTO_COMPILE_KEY = "synaptex.autoCompile";
 const AUTO_SAVE_DELAY_MS = 1500;
-const CONTEXT_CHARS = 6000;
 const FONT_SIZE_KEY = "synaptex.editorFontSize";
 const SPLIT_KEY = "synaptex.editorShare";
 const MIN_FONT_SIZE = 10;
@@ -131,12 +131,14 @@ export function Workspace() {
   function getEditorContext() {
     const view = editorRef.current;
     const file = project.activeFile;
-    if (!view) return { file, text: content };
+    const contextTokens = readContextTokens();
+    const windowChars = contextChars(contextTokens);
+    if (!view) return { file, text: content, contextTokens };
     const { from, to, head } = view.state.selection.main;
-    if (from !== to) return { file, text: view.state.sliceDoc(from, to) };
+    if (from !== to) return { file, text: view.state.sliceDoc(from, to), contextTokens };
     // Without a selection, send the part around the cursor.
-    const start = Math.max(0, head - CONTEXT_CHARS / 2);
-    return { file, text: content.slice(start, start + CONTEXT_CHARS) };
+    const start = Math.max(0, head - windowChars / 2);
+    return { file, text: content.slice(start, start + windowChars), contextTokens };
   }
 
   function getEditTarget(): EditTarget | null {

@@ -8,10 +8,8 @@ import type { ChatMessage, Conversation, ConversationSummary, EditorContext, Edi
 
 const GIGABYTE = 1024 ** 3;
 const NOTICE_BYTES = GIGABYTE;
-// Mirrors electron/ai.mjs and promptFor in electron/main.mjs.
-const CONTEXT_TOKENS = 4096;
+// Mirrors promptFor in electron/main.mjs.
 const RECENT_MESSAGES = 8;
-const MAX_CONTEXT_CHARS = 6000;
 const SYSTEM_PROMPT_CHARS = 200;
 const CHARS_PER_TOKEN = 4;
 const CRITICAL_BYTES = 5 * GIGABYTE;
@@ -25,8 +23,8 @@ function contextShare(conversation: Conversation, context: EditorContext) {
     SYSTEM_PROMPT_CHARS +
     messageChars +
     (conversation.summary?.length ?? 0) +
-    Math.min(context.text.length, MAX_CONTEXT_CHARS);
-  return Math.min(1, chars / CHARS_PER_TOKEN / CONTEXT_TOKENS);
+    context.text.length;
+  return Math.min(1, chars / CHARS_PER_TOKEN / context.contextTokens);
 }
 
 function formatBytes(bytes: number) {

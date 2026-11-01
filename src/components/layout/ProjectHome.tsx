@@ -57,6 +57,7 @@ export function ProjectHome({
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
   const [cardSize, setCardSize] = useState(readCardSize);
   const [listView, setListView] = useState(readListView);
+  const [menuId, setMenuId] = useState<string | null>(null);
   const gridStyle = {
     gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_SIZES[cardSize]}px, 1fr))`,
   };
@@ -248,13 +249,13 @@ export function ProjectHome({
           )}
           <div style={listView ? undefined : gridStyle} className={listView ? "" : "grid gap-3 p-4"}>
             {visible.map((project) => (
+              <div key={project.id} className="relative">
               <button
-                key={project.id}
                 type="button"
                 onClick={() => onOpenRecent(project.id)}
                 className={
                   listView
-                    ? "flex w-full items-center gap-4 border-b border-line px-4 py-2 text-left text-sm hover:bg-surface"
+                    ? "flex w-full items-center gap-4 border-b border-line py-2 pr-10 pl-4 text-left text-sm hover:bg-surface"
                     : "overflow-hidden rounded-lg border border-line bg-surface text-left text-sm hover:border-accent"
                 }
               >
@@ -268,6 +269,40 @@ export function ProjectHome({
                 <span className={`block truncate ${listView ? "min-w-0 flex-1" : "px-2 pt-2"}`}>{project.name}</span>
                 <span className={`block text-xs text-muted ${listView ? "" : "px-2 pb-2"}`}>{dateFormat.format(project.openedAt)}</span>
               </button>
+                <button
+                  type="button"
+                  aria-label={t("projectMenu")}
+                  aria-expanded={menuId === project.id}
+                  onClick={() => setMenuId(menuId === project.id ? null : project.id)}
+                  className="absolute top-1 right-1 rounded bg-canvas/80 px-2 text-sm hover:text-accent"
+                >
+                  ⋯
+                </button>
+                {menuId === project.id && (
+                  <div className="absolute top-8 right-1 z-10 rounded border border-line bg-surface py-1 text-xs shadow-lg">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuId(null);
+                        getDesktopApi()?.exportZip(project.id);
+                      }}
+                      className="block w-full px-3 py-1.5 text-left whitespace-nowrap hover:text-accent"
+                    >
+                      {t("exportZip")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuId(null);
+                        getDesktopApi()?.revealProject(project.id);
+                      }}
+                      className="block w-full px-3 py-1.5 text-left whitespace-nowrap hover:text-accent"
+                    >
+                      {t("showInFolder")}
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>

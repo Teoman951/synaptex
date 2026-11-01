@@ -139,4 +139,11 @@ export const en: Record<string, string> = {
   mcpOff: "Not connected",
   mcpWaiting: "Set up, Claude has not accessed anything yet",
   mcpActive: "Connected, last access: {time}",
+  projectMenu: "Project menu",
+  showInFolder: "Show in folder",
+  contextSize: "Context size",
+  contextSmall: "Small (4K, about 3 pages)",
+  contextMedium: "Medium (8K, about 6 pages)",
+  contextLarge: "Large (16K, about 12 pages)",
+  contextSizeHint: "More context needs more memory and makes replies slower.",
 };
