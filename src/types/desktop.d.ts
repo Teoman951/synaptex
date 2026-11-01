@@ -39,6 +39,13 @@ export interface ConversationSummary {
   bytes: number;
 }
 
+export interface Checkpoint {
+  id: string;
+  label: string;
+  createdAt: number;
+  fileCount: number;
+}
+
 export interface CompileError {
   message: string;
   // Null when the error lies outside the project or has no location.
@@ -87,6 +94,8 @@ export interface SynaptexDesktopApi {
   deleteConversation: (id: string) => Promise<void>;
   compressConversation: (id: string) => Promise<Conversation>;
   sendMessage: (id: string, text: string, context: string) => Promise<Conversation>;
+  listCheckpoints: () => Promise<Checkpoint[]>;
+  restoreCheckpoint: (id: string, activeFile: string) => Promise<OpenedProject>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

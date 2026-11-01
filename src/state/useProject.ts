@@ -118,6 +118,16 @@ export function useProject() {
     });
   }
 
+  async function restoreCheckpoint(id: string) {
+    const question = "Projekt auf diesen Stand zurücksetzen? Der aktuelle Stand wird vorher gesichert.";
+    if (!window.confirm(question)) return;
+    await attempt(async () => {
+      await writeActiveFile();
+      const restored = await getDesktopApi()?.restoreCheckpoint(id, activeFile);
+      if (restored) applyProject(restored);
+    });
+  }
+
   async function selectFile(file: string) {
     await attempt(async () => {
       await writeActiveFile();
@@ -147,7 +157,10 @@ export function useProject() {
       try {
         const result = await api.compile(mainFile, opened ? engine : "pdflatex");
         // A cancelled run leaves the last PDF in place.
-        if (!result.cancelled) setCompileResult(result);
+        // A failed run does too, while its errors are shown.
+        if (!result.cancelled) {
+          setCompileResult((previous) => ({ ...result, pdf: result.pdf ?? previous?.pdf ?? null }));
+        }
       } finally {
         stopListening();
         setCompileProgress(null);
@@ -179,6 +192,7 @@ export function useProject() {
     save,
     saveAs,
     selectFile,
+    restoreCheckpoint,
     compile,
     cancelCompile: () => getDesktopApi()?.cancelCompile(),
   };

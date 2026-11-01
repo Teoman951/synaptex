@@ -143,6 +143,7 @@ export function Workspace() {
           onSave={save}
           onSaveAs={saveAs}
           onSelectFile={project.selectFile}
+          onRestoreCheckpoint={project.restoreCheckpoint}
           onSelectOutline={jumpTo}
         />
         <section className="flex min-h-0 min-w-0 flex-1 flex-col border-r border-line bg-black">

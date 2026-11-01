@@ -35,5 +35,7 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   deleteConversation: (id) => ipcRenderer.invoke("chat:delete", id),
   compressConversation: (id) => ipcRenderer.invoke("chat:compress", id),
   sendMessage: (id, text, context) => ipcRenderer.invoke("chat:send", id, text, context),
+  listCheckpoints: () => ipcRenderer.invoke("checkpoint:list"),
+  restoreCheckpoint: (id, activeFile) => ipcRenderer.invoke("checkpoint:restore", id, activeFile),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

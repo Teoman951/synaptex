@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { createCheckpoint, listCheckpoints, loadCheckpoint } from "./checkpoints.mjs";
 import { compileProject } from "./compiler.mjs";
 import { complete, stopServer } from "./ai.mjs";
 import {
@@ -146,6 +147,14 @@ async function rememberProject(root) {
   await writeFile(recentProjectsFile(), JSON.stringify(recent), "utf8");
 }
 
+function checkpointsFolder() {
+  return path.join(app.getPath("userData"), "checkpoints", projectId(projectRoot));
+}
+
+async function saveCheckpoint(label) {
+  await createCheckpoint(checkpointsFolder(), projectRoot, await listTextFiles(projectRoot), label);
+}
+
 async function loadProject(root, activeFile) {
   const files = await listTextFiles(root);
   const { mainFile, engine } = await detectMainFile(root, files);
@@ -154,6 +163,7 @@ async function loadProject(root, activeFile) {
   const content = await readFile(path.join(root, active), "utf8");
   projectRoot = root;
   await rememberProject(root);
+  await saveCheckpoint("Beim Öffnen");
   return { name: path.basename(root), files, mainFile, engine, activeFile: active, content };
 }
 
@@ -228,6 +238,20 @@ function registerProjectHandlers() {
 
   ipcMain.handle("project:outline", (_event, mainFile) => buildOutline(mainFile, resolveInProject));
 
+  ipcMain.handle("checkpoint:list", () => (projectRoot ? listCheckpoints(checkpointsFolder()) : []));
+
+  // The current state is saved first, so a restore can itself be undone.
+  ipcMain.handle("checkpoint:restore", async (_event, id, activeFile) => {
+    const { files } = await loadCheckpoint(checkpointsFolder(), id);
+    await saveCheckpoint("Vor dem Wiederherstellen");
+    for (const [file, content] of Object.entries(files)) {
+      const target = resolveInProject(file);
+      await mkdir(path.dirname(target), { recursive: true });
+      await writeFile(target, content, "utf8");
+    }
+    return loadProject(projectRoot, activeFile);
+  });
+
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));
 
   ipcMain.handle("project:write", (_event, file, content) =>
@@ -248,7 +272,7 @@ function registerProjectHandlers() {
   ipcMain.handle("project:compile", async (event, mainFile, engine) => {
     resolveInProject(mainFile);
     compileAbort = new AbortController();
-    return compileProject({
+    const result = await compileProject({
       projectDir: projectRoot,
       mainFile,
       engine,
@@ -256,6 +280,8 @@ function registerProjectHandlers() {
       signal: compileAbort.signal,
       onProgress: (message) => event.sender.send("project:compile-progress", message),
     });
+    if (result.pdf) await saveCheckpoint("Nach dem Kompilieren");
+    return result;
   });
 }
 

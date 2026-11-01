@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { FileList } from "@/components/layout/FileList";
+import { HistoryPanel } from "@/components/layout/HistoryPanel";
 import type { OutlineItem } from "@/types/desktop";
 
 interface ProjectSidebarProps {
@@ -13,6 +14,7 @@ interface ProjectSidebarProps {
   onSave: () => void;
   onSaveAs: () => void;
   onSelectFile: (file: string) => void;
+  onRestoreCheckpoint: (id: string) => void;
   onSelectOutline: (file: string, line: number) => void;
 }
 
@@ -27,12 +29,14 @@ export function ProjectSidebar({
   onSave,
   onSaveAs,
   onSelectFile,
+  onRestoreCheckpoint,
   onSelectOutline,
 }: ProjectSidebarProps) {
-  const [tab, setTab] = useState<"files" | "chat">("files");
+  const [tab, setTab] = useState<"files" | "chat" | "history">("files");
   const tabs = [
     { id: "files", label: "Dateien" },
     { id: "chat", label: "Unterhaltungen" },
+    { id: "history", label: "Verlauf" },
   ] as const;
   const actions = [
     { label: "Speichern", onClick: onSave },
@@ -74,6 +78,8 @@ export function ProjectSidebar({
 
       {/* Stays mounted so a running reply survives switching tabs. */}
       <div className={`min-h-0 flex-1 flex-col ${tab === "chat" ? "flex" : "hidden"}`}>{chat}</div>
+
+      {tab === "history" && <HistoryPanel onRestore={onRestoreCheckpoint} />}
 
       {tab === "files" && (
       <>
