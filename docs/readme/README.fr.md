@@ -36,6 +36,10 @@
 
 Les petits modèles locaux font des erreurs. Vérifiez les suggestions avant de les appliquer.
 
+## Sécurité
+
+Les documents LaTeX peuvent lire des fichiers hors du projet à la compilation et, avec Tectonic, y écrire aussi. SynapTeX signale les commandes suspectes, mais ne détecte pas de façon fiable les attaques ciblées. Ne compilez que des projets de sources fiables.
+
 ## État du projet
 
 SynapTeX est en début de développement et testé sous Windows. L'interface est disponible en cinq langues. Linux est proposé mais non testé. macOS n'est pas encore disponible.

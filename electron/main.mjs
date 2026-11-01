@@ -19,6 +19,7 @@ import { downloadFile, installLlamaServer, MODEL_CATALOG } from "./downloads.mjs
 import { detectModels, findGguf, withDetails } from "./models.mjs";
 import { buildOutline } from "./outline.mjs";
 import { setLanguage, text } from "./strings.mjs";
+import { scanProject } from "./texScan.mjs";
 import { TEMPLATES } from "./templates.mjs";
 import { exportZip, extractZip } from "./zipImport.mjs";
 
@@ -74,7 +75,7 @@ function serveStaticExport() {
 // The renderer only sees paths relative to the open project. The project root
 // is chosen in a native dialog, so a compromised renderer cannot leave it.
 const TEX_FILTERS = [{ name: "LaTeX", extensions: ["tex"] }];
-const TEXT_EXTENSIONS = new Set([".tex", ".bib", ".sty", ".cls", ".bst", ".txt", ".md"]);
+const TEXT_EXTENSIONS = new Set([".tex", ".bib", ".sty", ".cls", ".bst", ".txt", ".md", ".bbx", ".cbx", ".def", ".cfg", ".ltx"]);
 const IGNORED_FOLDERS = new Set(["node_modules"]);
 const FILE_LIMIT = 5000;
 const RECENT_LIMIT = 50;
@@ -339,6 +340,10 @@ function registerProjectHandlers() {
     const project = (await readRecentProjects()).find((item) => item.id === id);
     if (project) await shell.openPath(project.path);
   });
+
+  ipcMain.handle("project:scan", async () =>
+    projectRoot ? scanProject(projectRoot, await listTextFiles(projectRoot)) : [],
+  );
 
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));
 

@@ -103,6 +103,12 @@ export interface McpState {
   log: { at: number; tool: string; project: string | null; file: string | null }[];
 }
 
+export interface ScanFinding {
+  file: string;
+  line: number;
+  rule: string;
+}
+
 export interface CompileError {
   message: string;
   // Null when the error lies outside the project or has no location.
@@ -180,6 +186,7 @@ export interface SynaptexDesktopApi {
   mcpShare: (id: string, shared: boolean) => Promise<void>;
   exportZip: (id?: string) => Promise<void>;
   revealProject: (id: string) => Promise<void>;
+  scanProject: () => Promise<ScanFinding[]>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

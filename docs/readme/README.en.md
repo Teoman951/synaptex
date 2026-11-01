@@ -36,6 +36,10 @@ Write and compile LaTeX without a cloud. Your documents and AI conversations sta
 
 Small local models make mistakes. Check suggestions before applying them.
 
+## Security
+
+LaTeX documents can read files outside the project while compiling, and with Tectonic also write there. SynapTeX warns about suspicious commands but cannot reliably detect targeted attacks. Only compile projects from sources you trust.
+
 ## Status
 
 SynapTeX is in early development and tested on Windows. The interface is available in five languages. Linux is offered but untested. macOS is not available yet.

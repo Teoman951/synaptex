@@ -146,4 +146,10 @@ export const tr: Record<string, string> = {
   contextMedium: "Orta (8K, yaklaşık 6 sayfa)",
   contextLarge: "Büyük (16K, yaklaşık 12 sayfa)",
   contextSizeHint: "Daha fazla bağlam daha çok bellek gerektirir ve yanıtları yavaşlatır.",
+  "scanWarning": "Bu proje şüpheli komutlar içeriyor. LaTeX bunlarla proje dışındaki dosyaları okuyabilir veya yazabilir. Yalnızca kaynağa güveniyorsan derle.",
+  "zipWarning": "Yabancı LaTeX projeleri derleme sırasında bilgisayarındaki dosyaları okuyabilir. Yalnızca güvenilir kaynaklardan gelen projeleri derle. Devam edilsin mi?",
+  "scan.outsidePath": "proje dışında yol",
+  "scan.rawFileAccess": "doğrudan dosya erişimi",
+  "scan.shellCommand": "sistem komutu",
+  "scan.hiddenCommand": "gizlenmiş komut",
 };

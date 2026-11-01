@@ -63,5 +63,6 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   mcpShare: (id, shared) => ipcRenderer.invoke("mcp:share", id, shared),
   exportZip: (id) => ipcRenderer.invoke("project:export-zip", id),
   revealProject: (id) => ipcRenderer.invoke("project:reveal", id),
+  scanProject: () => ipcRenderer.invoke("project:scan"),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

@@ -36,6 +36,10 @@ LaTeX'i bulut olmadan yaz ve derle. Belgelerin ve yapay zekâ sohbetlerin bilgis
 
 Küçük yerel modeller hata yapar. Önerileri uygulamadan önce kontrol et.
 
+## Güvenlik
+
+LaTeX belgeleri derleme sırasında proje dışındaki dosyaları okuyabilir, Tectonic ile oraya yazabilir de. SynapTeX şüpheli komutlarda uyarır ancak hedefli saldırıları güvenilir biçimde algılayamaz. Yalnızca güvendiğin kaynaklardan gelen projeleri derle.
+
 ## Durum
 
 SynapTeX erken geliştirme aşamasındadır ve Windows'ta test edilmiştir. Arayüz beş dilde sunulur. Linux sunulmaktadır ancak test edilmemiştir. macOS henüz mevcut değildir.

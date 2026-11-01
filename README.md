@@ -55,6 +55,10 @@ Schreibe und kompiliere LaTeX ohne Cloud. Deine Dokumente und KI-Unterhaltungen 
 
 Kleine lokale Modelle machen Fehler. Prüfe Vorschläge, bevor du sie übernimmst.
 
+## Sicherheit
+
+LaTeX-Dokumente können beim Kompilieren Dateien außerhalb des Projekts lesen, und mit Tectonic auch dorthin schreiben. SynapTeX warnt bei verdächtigen Befehlen, kann gezielte Angriffe aber nicht zuverlässig erkennen. Kompiliere nur Projekte aus Quellen, denen du vertraust.
+
 ## Status
 
 SynapTeX ist in früher Entwicklung und getestet unter Windows. Linux wird angeboten, ist aber ungetestet. macOS gibt es noch nicht. Der Installer ist noch nicht signiert, Windows zeigt deshalb eine Warnung.

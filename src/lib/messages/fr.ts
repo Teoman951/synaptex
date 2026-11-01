@@ -146,4 +146,10 @@ export const fr: Record<string, string> = {
   contextMedium: "Moyen (8K, environ 6 pages)",
   contextLarge: "Grand (16K, environ 12 pages)",
   contextSizeHint: "Plus de contexte demande plus de mémoire et ralentit les réponses.",
+  "scanWarning": "Ce projet contient des commandes suspectes. LaTeX peut s'en servir pour lire ou écrire des fichiers hors du projet. Ne compilez que si vous faites confiance à la source.",
+  "zipWarning": "Des projets LaTeX tiers peuvent lire des fichiers de votre ordinateur à la compilation. Ne compilez que des projets de sources fiables. Continuer ?",
+  "scan.outsidePath": "chemin hors du projet",
+  "scan.rawFileAccess": "accès direct aux fichiers",
+  "scan.shellCommand": "commande système",
+  "scan.hiddenCommand": "commande dissimulée",
 };

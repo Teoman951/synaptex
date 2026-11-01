@@ -1,7 +1,7 @@
 "use client";
 
 import { t } from "@/lib/i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import type { CompileResult, Engine, OpenedProject, OutlineItem } from "@/types/desktop";
 
@@ -37,6 +37,8 @@ export function useProject() {
   const [compileResult, setCompileResult] = useState<CompileResult | null>(null);
 
   const [outline, setOutline] = useState<OutlineItem[]>([]);
+
+  const acceptedFindingsRef = useRef("");
 
   const isDirty = content !== savedContent;
   const mainFile = project?.mainFile ?? null;
@@ -150,6 +152,17 @@ export function useProject() {
         if (!opened) return;
         applyProject(opened);
       }
+      // Asks again only when the findings change.
+      const findings = await api.scanProject();
+      const signature = JSON.stringify(findings);
+      if (findings.length > 0 && signature !== acceptedFindingsRef.current) {
+        const list = findings
+          .slice(0, 8)
+          .map(({ file, line, rule }) => `${file}:${line} ${t(`scan.${rule}`)}`)
+          .join("\n");
+        if (!window.confirm(`${t("scanWarning")}\n\n${list}`)) return;
+        acceptedFindingsRef.current = signature;
+      }
       const mainFile = opened?.mainFile;
       if (!mainFile) throw new Error("No main file");
       setIsCompiling(true);
@@ -190,7 +203,10 @@ export function useProject() {
     newDocument: () => resetTo(true),
     createFromTemplate: (id: string) => openWith(() => getDesktopApi()?.createFromTemplate(id)),
     close: () => resetTo(false),
-    importZip: () => openWith(() => getDesktopApi()?.importZip()),
+    importZip: () => {
+      if (!window.confirm(t("zipWarning"))) return;
+      return openWith(() => getDesktopApi()?.importZip());
+    },
     save,
     saveAs,
     selectFile,

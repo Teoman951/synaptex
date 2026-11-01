@@ -36,6 +36,10 @@ Escribe y compila LaTeX sin la nube. Tus documentos y conversaciones con la IA s
 
 Los modelos locales pequeños cometen errores. Revisa las sugerencias antes de aplicarlas.
 
+## Seguridad
+
+Los documentos LaTeX pueden leer archivos fuera del proyecto al compilar y, con Tectonic, también escribir allí. SynapTeX avisa de comandos sospechosos, pero no detecta de forma fiable ataques dirigidos. Compila solo proyectos de fuentes de confianza.
+
 ## Estado
 
 SynapTeX está en una fase temprana de desarrollo y se ha probado en Windows. La interfaz está disponible en cinco idiomas. Linux está disponible, pero sin probar. macOS aún no está disponible.
