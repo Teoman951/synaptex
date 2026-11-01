@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import type { CompileResult, Engine, OpenedProject, OutlineItem } from "@/types/desktop";
@@ -69,12 +70,12 @@ export function useProject() {
     try {
       await action();
     } catch {
-      setError("Die Datei konnte nicht verarbeitet werden.");
+      setError(t("fileFailed"));
     }
   }
 
   async function openWith(load: () => Promise<OpenedProject | null> | undefined) {
-    if (isDirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
+    if (isDirty && !window.confirm(t("discardConfirm"))) return;
     await attempt(async () => {
       const opened = await load();
       if (opened) applyProject(opened);
@@ -82,7 +83,7 @@ export function useProject() {
   }
 
   function resetTo(open: boolean) {
-    if (isDirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
+    if (isDirty && !window.confirm(t("discardConfirm"))) return;
     setProject(null);
     setActiveFile("main.tex");
     setContent(INITIAL_DOCUMENT);
@@ -119,7 +120,7 @@ export function useProject() {
   }
 
   async function restoreCheckpoint(id: string) {
-    const question = "Projekt auf diesen Stand zurücksetzen? Der aktuelle Stand wird vorher gesichert.";
+    const question = t("restoreConfirm");
     if (!window.confirm(question)) return;
     await attempt(async () => {
       await writeActiveFile();
@@ -152,7 +153,7 @@ export function useProject() {
       const mainFile = opened?.mainFile;
       if (!mainFile) throw new Error("No main file");
       setIsCompiling(true);
-      setCompileProgress("Wird gestartet");
+      setCompileProgress(t("starting"));
       const stopListening = api.onCompileProgress(setCompileProgress);
       try {
         const result = await api.compile(mainFile, opened ? engine : "pdflatex");

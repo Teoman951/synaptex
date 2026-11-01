@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/lib/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import { diffLines } from "@/lib/lineDiff";
@@ -72,7 +73,11 @@ function Proposal({ target, after, onConfirm, onCancel }: ProposalProps) {
   return (
     <div className="border-t border-line p-2">
       <p className="mb-1 font-medium">
-        {target.file}, Zeile {target.line}: {target.before ? "Text ersetzen" : "Text einfügen"}
+        {t("lineTarget", {
+          file: target.file,
+          line: target.line,
+          action: t(target.before ? "replaceText" : "insertText"),
+        })}
       </p>
       <pre className="max-h-48 overflow-auto rounded border border-line font-mono text-[11px]">
         {diffLines(target.before, after).map((line, index) => (
@@ -83,10 +88,10 @@ function Proposal({ target, after, onConfirm, onCancel }: ProposalProps) {
       </pre>
       <div className="mt-2 flex gap-3">
         <button type="button" onClick={onConfirm} className="rounded bg-accent px-2 py-1 font-medium text-canvas">
-          Anwenden
+          {t("apply")}
         </button>
         <button type="button" onClick={onCancel} className="text-muted hover:text-accent">
-          Ablehnen
+          {t("reject")}
         </button>
       </div>
     </div>
@@ -139,7 +144,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
     try {
       await action();
     } catch {
-      setError("Die KI konnte nicht antworten. Prüfe Server und Modell.");
+      setError(t("aiFailed"));
     }
   }
 
@@ -162,7 +167,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
   async function compress() {
     const api = getDesktopApi();
     if (!api || !current) return;
-    const question = "Ältere Nachrichten werden durch eine KI-Zusammenfassung ersetzt und endgültig entfernt. Fortfahren?";
+    const question = t("compressConfirm");
     if (!window.confirm(question)) return;
     setIsCompressing(true);
     await run(async () => {
@@ -173,7 +178,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
   }
 
   async function remove(item: ConversationSummary) {
-    if (!window.confirm(`„${item.title}“ endgültig löschen?`)) return;
+    if (!window.confirm(t("deleteConfirm", { title: item.title }))) return;
     await getDesktopApi()?.deleteConversation(item.id);
     if (current?.id === item.id) setCurrent(null);
     await refresh();
@@ -187,7 +192,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
   if (!isConfigured) {
     return (
       <p className="p-3 text-xs text-muted">
-        Richte die KI auf dem Startbildschirm unter <strong>KI-Modelle</strong> ein. Alles bleibt auf diesem Rechner.
+        {t("setupAi")}
       </p>
     );
   }
@@ -195,9 +200,9 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
   const isBusy = pendingReply !== null || isCompressing;
   const storageBanner =
     totalBytes >= CRITICAL_BYTES
-      ? `Unterhaltungen belegen ${formatBytes(totalBytes)}. Das ist sehr viel, bitte lösche alte Unterhaltungen.`
+      ? t("storageCritical", { size: formatBytes(totalBytes) })
       : totalBytes >= NOTICE_BYTES
-        ? `Unterhaltungen belegen ${formatBytes(totalBytes)}.`
+        ? t("storageNotice", { size: formatBytes(totalBytes) })
         : null;
 
   return (
@@ -213,7 +218,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
 
       {!current ? (
         <div className="min-h-0 flex-1 overflow-auto">
-          {conversations.length === 0 && <p className="p-3 text-muted">Noch keine Unterhaltungen.</p>}
+          {conversations.length === 0 && <p className="p-3 text-muted">{t("noConversations")}</p>}
           {conversations.map((item) => (
             <div key={item.id} className="flex items-center gap-2 border-b border-line px-3 py-2">
               <button type="button" onClick={() => open(item.id)} className="min-w-0 flex-1 truncate text-left hover:text-accent">
@@ -222,7 +227,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
               <span className="shrink-0 text-muted">{formatBytes(item.bytes)}</span>
               <button
                 type="button"
-                aria-label={`${item.title} löschen`}
+                aria-label={t("deleteLabel", { title: item.title })}
                 onClick={() => remove(item)}
                 className="shrink-0 text-muted hover:text-red-400"
               >
@@ -235,10 +240,10 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
         <>
           <div className="flex items-center gap-3 border-b border-line px-3 py-2">
             <button type="button" onClick={() => setCurrent(null)} className="text-muted hover:text-accent">
-              ← Alle
+              {t("all")}
             </button>
-            <span title="Grobe Schätzung des belegten Kontextfensters" className="flex items-center gap-1 text-muted">
-              Kontext {Math.round(contextShare(current, getContext()) * 100)} %
+            <span title={t("contextHint")} className="flex items-center gap-1 text-muted">
+              {t("context", { percent: Math.round(contextShare(current, getContext()) * 100) })}
               <span className="h-1 w-16 overflow-hidden rounded bg-surface">
                 <span
                   className="block h-full bg-accent"
@@ -252,12 +257,12 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
               onClick={compress}
               className="ml-auto text-muted hover:text-accent disabled:opacity-40"
             >
-              {isCompressing ? "Komprimiert..." : "Komprimieren"}
+              {t(isCompressing ? "compressing" : "compress")}
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-3">
             {current.summary && (
-              <p className="mb-3 rounded bg-surface p-2 text-muted">Zusammenfassung: {current.summary}</p>
+              <p className="mb-3 rounded bg-surface p-2 text-muted">{t("summary", { text: current.summary })}</p>
             )}
             {current.messages.map((message, index) => (
               <div key={index} className={`mb-3 ${message.role === "user" ? "text-accent" : ""}`}>
@@ -266,7 +271,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
             ))}
             {pendingReply === "" && (
               <p role="status" className="flex items-center gap-1 text-muted">
-                Denkt nach
+                {t("thinking")}
                 {[0, 150, 300].map((delay) => (
                   <span
                     key={delay}
@@ -289,7 +294,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
           after={proposal.after}
           onConfirm={() => {
             const applied = onApply(proposal.target, proposal.after);
-            setError(applied ? null : "Die Stelle hat sich geändert. Bitte sieh dir die Änderung neu an.");
+            setError(applied ? null : t("staleChange"));
             setProposal(null);
           }}
           onCancel={() => setProposal(null)}
@@ -306,17 +311,17 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
             }
           }}
           rows={3}
-          placeholder="Frag die lokale KI"
-          aria-label="Nachricht an die KI"
+          placeholder={t("askAi")}
+          aria-label={t("aiMessage")}
           className="w-full resize-none rounded border border-line bg-transparent p-2 outline-none focus:border-accent"
         />
         {isBusy && pendingReply !== null ? (
           <button type="button" onClick={() => getDesktopApi()?.cancelAi()} className="text-muted hover:text-accent">
-            Antwort stoppen
+            {t("stopReply")}
           </button>
         ) : (
           <button type="button" onClick={() => setCurrent(null)} className="text-muted hover:text-accent">
-            + Neue Unterhaltung
+            {t("newConversation")}
           </button>
         )}
       </div>

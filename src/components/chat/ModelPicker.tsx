@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/lib/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import type { AiModel, CatalogModel, DownloadProgress, ModelOverview } from "@/types/desktop";
@@ -34,7 +35,7 @@ export function ModelPicker() {
 
   async function download(model: CatalogModel) {
     const size = formatSize(model.bytes);
-    if (!window.confirm(`${model.name} (${size}) herunterladen?`)) return;
+    if (!window.confirm(t("downloadConfirm", { name: model.name, size }))) return;
     setDownloadError(false);
     setProgress({ label: model.name, percent: 0 });
     try {
@@ -57,7 +58,7 @@ export function ModelPicker() {
   }
 
   function trash(model: AiModel) {
-    if (!window.confirm(`„${model.name}“ in den Papierkorb verschieben?`)) return;
+    if (!window.confirm(t("trashConfirm", { name: model.name }))) return;
     return update(() => getDesktopApi()?.trashModel(model.id));
   }
 
@@ -67,10 +68,10 @@ export function ModelPicker() {
 
   return (
     <div className="max-w-2xl p-4 text-xs">
-      <p className="py-2 text-muted">Aktiv: <span className="text-foreground">{active?.name ?? "Keines ausgewählt"}</span></p>
+      <p className="py-2 text-muted">{t("active")} <span className="text-foreground">{active?.name ?? t("noneSelected")}</span></p>
       {(
         <div>
-          {overview.models.length === 0 && <p className="py-2 text-muted">Keine Modelle gefunden.</p>}
+          {overview.models.length === 0 && <p className="py-2 text-muted">{t("noModels")}</p>}
           {overview.models.map((model) => (
             <div key={model.id} className="flex items-center gap-2 py-1">
               <button
@@ -84,23 +85,23 @@ export function ModelPicker() {
                 {model.name}
               </button>
               <span className="shrink-0 text-muted">
-                {model.source}, {formatSize(model.bytes)}
+                {model.source === "Hinzugefügt" ? t("added") : model.source}, {formatSize(model.bytes)}
               </span>
               {model.source === "Hinzugefügt" && (
                 <button
                   type="button"
-                  title="Aus der Liste entfernen, die Datei bleibt"
+                  title={t("removeHint")}
                   onClick={() => update(() => api?.removeModel(model.id))}
                   className="shrink-0 text-muted hover:text-accent"
                 >
-                  Entfernen
+                  {t("remove")}
                 </button>
               )}
               {model.source !== "Ollama" && (
                 <button
                   type="button"
-                  aria-label={`${model.name} in den Papierkorb`}
-                  title="Datei in den Papierkorb verschieben"
+                  aria-label={t("trashLabel", { name: model.name })}
+                  title={t("trashHint")}
                   onClick={() => trash(model)}
                   className="shrink-0 text-muted hover:text-red-400"
                 >
@@ -109,7 +110,7 @@ export function ModelPicker() {
               )}
             </div>
           ))}
-          {catalog.length > 0 && <p className="mt-2 text-muted">Herunterladen</p>}
+          {catalog.length > 0 && <p className="mt-2 text-muted">{t("download")}</p>}
           {catalog.map((model) => (
             <div key={model.id} className="flex items-center gap-2 py-1">
               <span className="min-w-0 flex-1 truncate">{model.name}</span>
@@ -120,7 +121,7 @@ export function ModelPicker() {
                 onClick={() => download(model)}
                 className="shrink-0 text-accent hover:underline disabled:opacity-40"
               >
-                Laden
+                {t("load")}
               </button>
             </div>
           ))}
@@ -128,17 +129,17 @@ export function ModelPicker() {
             <p className="py-1">
               {progress.label}: {progress.percent} %{" "}
               <button type="button" onClick={() => api?.cancelDownload()} className="text-accent hover:underline">
-                Abbrechen
+                {t("cancel")}
               </button>
             </p>
           )}
-          {downloadError && <p role="alert" className="py-1 text-red-400">Download fehlgeschlagen oder abgebrochen.</p>}
+          {downloadError && <p role="alert" className="py-1 text-red-400">{t("downloadFailed")}</p>}
           <div className="mt-2 flex gap-3">
             <button type="button" onClick={() => update(() => api?.addModel())} className="text-accent hover:underline">
-              + Modell hinzufügen
+              {t("addModel")}
             </button>
             <button type="button" onClick={() => update(() => api?.pickServer())} className="text-accent hover:underline">
-              {overview.hasServer ? "llama-server ändern" : "Vorhandenen llama-server wählen"}
+              {t(overview.hasServer ? "changeServer" : "pickServer")}
             </button>
             {!overview.hasServer && (
               <button
@@ -147,7 +148,7 @@ export function ModelPicker() {
                 onClick={installServer}
                 className="text-accent hover:underline disabled:opacity-40"
               >
-                llama-server einrichten
+                {t("installServer")}
               </button>
             )}
           </div>

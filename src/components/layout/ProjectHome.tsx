@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { ModelPicker } from "@/components/chat/ModelPicker";
 import { Logo } from "@/components/layout/Logo";
 import { getDesktopApi } from "@/lib/desktop";
+import { changeLanguage, language, LANGUAGES, type Language, t } from "@/lib/i18n";
 import type { ProjectTemplate, RecentProject } from "@/types/desktop";
 
-const dateFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
+const dateFormat = new Intl.DateTimeFormat(language, { dateStyle: "medium" });
 
 interface ProjectHomeProps {
   error: string | null;
@@ -41,20 +42,20 @@ export function ProjectHome({
     project.name.toLowerCase().includes(query.toLowerCase()),
   );
   const secondaryActions = [
-    { label: "ZIP importieren", onClick: onImportZip },
-    { label: "Ordner öffnen", onClick: onOpenFolder },
-    { label: "Datei öffnen", onClick: onOpenFile },
+    { label: t("importZip"), onClick: onImportZip },
+    { label: t("openFolder"), onClick: onOpenFolder },
+    { label: t("openFile"), onClick: onOpenFile },
   ];
 
   return (
     <div className="flex h-full">
-      <aside className="w-48 shrink-0 p-4">
+      <aside className="flex w-48 shrink-0 flex-col p-4">
         <Logo />
         <nav className="mt-8 flex flex-col gap-1">
           {(
             [
-              { id: "projects", label: "Deine Projekte" },
-              { id: "models", label: "KI-Modelle" },
+              { id: "projects", label: t("yourProjects") },
+              { id: "models", label: t("aiModels") },
             ] as const
           ).map(({ id, label }) => (
             <button
@@ -67,22 +68,34 @@ export function ProjectHome({
             </button>
           ))}
         </nav>
+        <select
+          aria-label={t("language")}
+          value={language}
+          onChange={(event) => changeLanguage(event.target.value as Language)}
+          className="mt-auto rounded border border-line bg-surface px-2 py-1.5 text-xs"
+        >
+          {LANGUAGES.map(({ id, label }) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
       </aside>
 
       {view === "templates" && (
         <main className="min-w-0 flex-1 overflow-auto bg-surface/40">
           <header className="flex items-center gap-3 border-b border-line p-4">
-            <h1 className="mr-auto text-base font-semibold">Neues Projekt</h1>
+            <h1 className="mr-auto text-base font-semibold">{t("newProject")}</h1>
             <button type="button" onClick={onNew} className="rounded-full bg-surface px-3 py-1.5 text-xs font-medium hover:text-accent">
-              Leeres Dokument
+              {t("emptyDocument")}
             </button>
             <button type="button" onClick={() => setView("projects")} className="text-xs text-muted hover:text-accent">
-              Abbrechen
+              {t("cancel")}
             </button>
           </header>
           {[...new Set(templates.map((template) => template.category))].map((category) => (
             <section key={category} className="p-4">
-              <h2 className="mb-2 text-xs font-medium text-muted">{category}</h2>
+              <h2 className="mb-2 text-xs font-medium text-muted">{t(`category.${category}`)}</h2>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
                 {templates
                   .filter((template) => template.category === category)
@@ -93,7 +106,7 @@ export function ProjectHome({
                       onClick={() => onCreateFromTemplate(template.id)}
                       className="rounded-lg border border-line bg-surface p-4 text-left text-sm hover:border-accent"
                     >
-                      {template.name}
+                      {t(`template.${template.id}`)}
                     </button>
                   ))}
               </div>
@@ -104,7 +117,7 @@ export function ProjectHome({
 
       {view === "models" && (
         <main className="min-w-0 flex-1 overflow-auto bg-surface/40">
-          <h1 className="border-b border-line p-4 text-base font-semibold">KI-Modelle</h1>
+          <h1 className="border-b border-line p-4 text-base font-semibold">{t("aiModels")}</h1>
           <ModelPicker />
         </main>
       )}
@@ -112,13 +125,13 @@ export function ProjectHome({
       {view === "projects" && (
       <main className="flex min-w-0 flex-1 flex-col bg-surface/40">
         <header className="flex flex-wrap items-center gap-2 border-b border-line p-4">
-          <h1 className="mr-auto text-base font-semibold">Deine Projekte</h1>
+          <h1 className="mr-auto text-base font-semibold">{t("yourProjects")}</h1>
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Suchen"
-            aria-label="Projekte suchen"
+            placeholder={t("search")}
+            aria-label={t("searchProjects")}
             className="w-48 rounded-full border border-line bg-transparent px-4 py-1.5 text-xs outline-none focus:border-accent"
           />
           {secondaryActions.map(({ label, onClick }) => (
@@ -136,7 +149,7 @@ export function ProjectHome({
             onClick={() => setView("templates")}
             className="rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-canvas"
           >
-            + Neu
+            {t("new")}
           </button>
         </header>
 
@@ -149,7 +162,7 @@ export function ProjectHome({
         <div className="min-h-0 flex-1 overflow-auto">
           {visible.length === 0 && (
             <p className="p-8 text-center text-sm text-muted">
-              {projects.length === 0 ? "Noch keine Projekte geöffnet." : "Keine Treffer."}
+              {t(projects.length === 0 ? "noProjects" : "noMatches")}
             </p>
           )}
           {visible.map((project) => (

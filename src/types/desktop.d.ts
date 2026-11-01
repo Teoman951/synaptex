@@ -166,6 +166,7 @@ export interface SynaptexDesktopApi {
   listTemplates: () => Promise<ProjectTemplate[]>;
   createFromTemplate: (id: string) => Promise<OpenedProject | null>;
   searchProject: (query: string) => Promise<SearchMatch[]>;
+  setLanguage: (language: string) => Promise<void>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

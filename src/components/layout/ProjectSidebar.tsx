@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import { useState, type ReactNode } from "react";
 import { ProjectSearch } from "@/components/layout/ProjectSearch";
 import { FileList } from "@/components/layout/FileList";
@@ -36,16 +37,16 @@ export function ProjectSidebar({
   const [tab, setTab] = useState<"files" | "chat" | "history">("files");
   const [isSearching, setIsSearching] = useState(false);
   const tabs = [
-    { id: "files", label: "Dateien" },
-    { id: "chat", label: "Unterhaltungen" },
-    { id: "history", label: "Verlauf" },
+    { id: "files", label: t("files") },
+    { id: "chat", label: t("conversations") },
+    { id: "history", label: t("history") },
   ] as const;
 
   return (
     <aside className={`flex shrink-0 flex-col border-r border-line ${tab === "chat" ? "w-96" : "w-60"}`}>
       <div className="border-b border-line p-3">
         <button type="button" onClick={onBack} className="text-xs text-muted hover:text-accent">
-          ← Projekte
+          {t("back")}
         </button>
         <p title={name} className="mt-2 truncate text-sm font-semibold">
           {name}
@@ -53,7 +54,7 @@ export function ProjectSidebar({
         {/* Saved projects save themselves; only a new document needs a place first. */}
         {canSave && (
           <button type="button" onClick={onSaveAs} className="mt-2 text-xs text-accent hover:underline">
-            Speicherort wählen
+            {t("chooseLocation")}
           </button>
         )}
       </div>
@@ -83,9 +84,9 @@ export function ProjectSidebar({
       <div className="flex justify-end px-3 pt-2">
         <button
           type="button"
-          aria-label="Projekt durchsuchen"
+          aria-label={t("searchProject")}
           aria-pressed={isSearching}
-          title="Projekt durchsuchen"
+          title={t("searchProject")}
           onClick={() => setIsSearching(!isSearching)}
           className={isSearching ? "text-accent" : "text-muted hover:text-accent"}
         >
@@ -103,9 +104,9 @@ export function ProjectSidebar({
         )}
       </div>
 
-      <h2 className="border-t border-line px-3 pt-3 text-xs font-medium">Gliederung</h2>
-      <nav aria-label="Gliederung" className="max-h-[40%] min-h-16 overflow-auto py-2">
-        {outline.length === 0 && <p className="px-3 text-xs text-muted">Keine Abschnitte.</p>}
+      <h2 className="border-t border-line px-3 pt-3 text-xs font-medium">{t("outline")}</h2>
+      <nav aria-label={t("outline")} className="max-h-[40%] min-h-16 overflow-auto py-2">
+        {outline.length === 0 && <p className="px-3 text-xs text-muted">{t("noSections")}</p>}
         {outline.map((item) => (
           <button
             key={`${item.file}:${item.line}`}

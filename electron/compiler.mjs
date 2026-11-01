@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
+import { text } from "./strings.mjs";
 
 export const ENGINES = ["tectonic", "pdflatex", "xelatex", "lualatex"];
 
@@ -101,18 +102,18 @@ export async function locateSource({ projectDir, outputDir, mainFile, page, x, y
 // The compiler contract: project folder in, PDF and log out. Other backends
 // (Tectonic, a remote server) implement the same function.
 async function runTectonic({ projectDir, mainFile, outputDir, signal, tectonicPath, onProgress }) {
-  onProgress("Tectonic läuft");
+  onProgress(text("tectonic"));
   const args = [mainFile, "--outdir", outputDir, "--synctex", "--chatter", "minimal"];
   const { error, output } = await run(tectonicPath, args, { cwd: projectDir, signal });
   if (signal?.aborted) return { ok: false, cancelled: true, pdf: null, errors: [], log: output };
   if (error?.code === "ENOENT") {
-    return { ok: false, pdf: null, errors: [{ message: "Tectonic wurde nicht gefunden.", file: null, line: null }], log: "" };
+    return { ok: false, pdf: null, errors: [{ message: text("noTectonic"), file: null, line: null }], log: "" };
   }
   const pdfPath = path.join(outputDir, `${path.basename(mainFile, ".tex")}.pdf`);
   const pdf = existsSync(pdfPath) ? await readFile(pdfPath) : null;
   const errors = parseErrors(output);
   if (!pdf && errors.length === 0) {
-    errors.push({ message: "Es wurde kein PDF erzeugt.", file: null, line: null });
+    errors.push({ message: text("noPdf"), file: null, line: null });
   }
   return { ok: Boolean(pdf) && errors.length === 0, pdf, errors, log: output };
 }
@@ -142,23 +143,23 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   let result;
   let log = "";
   for (let pass = 1; pass <= MAX_ENGINE_RUNS; pass++) {
-    onProgress(`Durchlauf ${pass}`);
+    onProgress(text("pass", { n: pass }));
     result = await run(tool, args, { cwd: projectDir, signal, env: { ...process.env, max_print_line: "100000" } }, (output) => {
       // Finished pages appear as [n] in the engine output.
       const page = [...output.matchAll(/\[(\d+)[\s\]{<]/g)].at(-1)?.[1];
-      if (page) onProgress(`Durchlauf ${pass}, Seite ${page}`);
+      if (page) onProgress(text("passPage", { n: pass, page }));
     });
     if (signal?.aborted) return { ok: false, cancelled: true, pdf: null, errors: [], log };
     if (result.error?.code === "ENOENT") {
-      return { ok: false, pdf: null, errors: [{ message: "Kein LaTeX-Compiler gefunden.", file: null, line: null }], log: "" };
+      return { ok: false, pdf: null, errors: [{ message: text("noCompiler"), file: null, line: null }], log: "" };
     }
     if (result.error?.killed) {
-      return { ok: false, pdf: null, errors: [{ message: "Zeitlimit beim Kompilieren überschritten.", file: null, line: null }], log: result.output };
+      return { ok: false, pdf: null, errors: [{ message: text("timeout"), file: null, line: null }], log: result.output };
     }
     log = result.output;
 
     if (pass === 1) {
-      onProgress("Literaturverzeichnis");
+      onProgress(text("bibliography"));
       const bibliography = await runBibliography(baseName, projectDir, outputDir, signal);
       if (bibliography) log += bibliography.output;
     } else if (!/Rerun to get|Label\(s\) may have changed/.test(result.output)) {
@@ -169,6 +170,6 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   const pdfPath = path.join(outputDir, `${baseName}.pdf`);
   const pdf = existsSync(pdfPath) ? await readFile(pdfPath) : null;
   const errors = parseErrors(log);
-  if (!pdf && errors.length === 0) errors.push({ message: "Es wurde kein PDF erzeugt.", file: null, line: null });
+  if (!pdf && errors.length === 0) errors.push({ message: text("noPdf"), file: null, line: null });
   return { ok: Boolean(pdf) && errors.length === 0, pdf, errors, log };
 }

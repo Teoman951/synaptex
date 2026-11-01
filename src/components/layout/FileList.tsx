@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 interface FileListProps {
   files: string[];
   activeFile: string;
@@ -19,7 +20,7 @@ export function FileList({ files, activeFile, mainFile, onSelect }: FileListProp
           }`}
         >
           {file}
-          {file === mainFile && " (Haupt)"}
+          {file === mainFile && t("mainFile")}
         </button>
       ))}
     </nav>

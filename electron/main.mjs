@@ -18,6 +18,7 @@ import {
 import { downloadFile, installLlamaServer, MODEL_CATALOG } from "./downloads.mjs";
 import { detectModels, findGguf, withDetails } from "./models.mjs";
 import { buildOutline } from "./outline.mjs";
+import { setLanguage, text } from "./strings.mjs";
 import { TEMPLATES } from "./templates.mjs";
 import { extractZip } from "./zipImport.mjs";
 
@@ -205,13 +206,13 @@ function registerProjectHandlers() {
     const window = BrowserWindow.fromWebContents(event.sender);
     const source = await dialog.showOpenDialog(window, {
       properties: ["openFile"],
-      filters: [{ name: "ZIP-Archiv", extensions: ["zip"] }],
+      filters: [{ name: text("zipFilter"), extensions: ["zip"] }],
     });
     if (source.canceled || source.filePaths.length === 0) return null;
     const zipPath = source.filePaths[0];
 
     const target = await dialog.showSaveDialog(window, {
-      title: "Neuen Projektordner anlegen",
+      title: text("newFolder"),
       defaultPath: zipPath.replace(/\.zip$/i, ""),
     });
     if (target.canceled || !target.filePath) return null;
@@ -297,7 +298,7 @@ function registerProjectHandlers() {
     const template = TEMPLATES.find((item) => item.id === id);
     if (!template) throw new Error("Unknown template");
     const { canceled, filePath } = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), {
-      title: "Neuen Projektordner anlegen",
+      title: text("newFolder"),
       defaultPath: template.name,
     });
     if (canceled || !filePath) return null;
@@ -357,9 +358,13 @@ function registerProjectHandlers() {
   });
 }
 
-const SYSTEM_PROMPT =
-  "Du hilfst beim Schreiben von LaTeX-Dokumenten. Du bekommst den Dokumenttext mit jeder Frage und kannst ihn lesen. Antworte auf Deutsch und knapp. " +
-  "Gib LaTeX-Code, der ins Dokument soll, immer als Codeblock mit drei Backticks aus.";
+function systemPrompt() {
+  return (
+    "You help with writing LaTeX documents. You receive the document text with every question " +
+    `and can read it. Answer briefly in ${text("languageName")}. ` +
+    "Always put LaTeX code that belongs in the document in a code block with three backticks."
+  );
+}
 const MAX_CONTEXT_CHARS = 6000;
 const RECENT_MESSAGES = 8;
 const KEEP_AFTER_COMPRESS = 4;
@@ -418,8 +423,8 @@ function conversationsFolder() {
 // Small models overlook system messages, so the text sits in the question itself.
 function promptFor(conversation, { file, text }) {
   const system = conversation.summary
-    ? `${SYSTEM_PROMPT}\n\nBisheriger Verlauf: ${conversation.summary}`
-    : SYSTEM_PROMPT;
+    ? `${systemPrompt()}\n\nConversation so far: ${conversation.summary}`
+    : systemPrompt();
   const recent = conversation.messages.slice(-RECENT_MESSAGES);
   const question = recent.at(-1);
   const excerpt = String(text).slice(0, MAX_CONTEXT_CHARS);
@@ -428,7 +433,7 @@ function promptFor(conversation, { file, text }) {
     ...recent.slice(0, -1),
     {
       role: "user",
-      content: `Das ist der aktuelle Text aus ${file}:\n\n${excerpt}\n\nMeine Frage dazu: ${question.content}`,
+      content: `Current text from ${file}:\n\n${excerpt}\n\nMy question: ${question.content}`,
     },
   ];
 }
@@ -444,7 +449,7 @@ async function compressConversation(folder, conversation, settings) {
       {
         role: "user",
         content:
-          "Fasse diese Unterhaltung kurz auf Deutsch zusammen und behalte Entscheidungen bei:\n" +
+          `Summarize this conversation briefly in ${text("languageName")} and keep decisions:\n` +
           `${conversation.summary ?? ""}\n${transcript.slice(-MAX_CONTEXT_CHARS)}`,
       },
     ],
@@ -458,6 +463,8 @@ async function compressConversation(folder, conversation, settings) {
 }
 
 function registerChatHandlers() {
+  ipcMain.handle("app:set-language", (_event, language) => setLanguage(language));
+
   ipcMain.handle("ai:configured", async () => Boolean(await readAiSettings()));
 
   ipcMain.handle("ai:models", async () => {
@@ -516,7 +523,7 @@ function registerChatHandlers() {
 
   ipcMain.handle("ai:pick-server", async (event) => {
     const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
-      title: "llama-server auswählen",
+      title: text("pickServer"),
       properties: ["openFile"],
     });
     if (canceled || filePaths.length === 0) return;
@@ -525,9 +532,9 @@ function registerChatHandlers() {
 
   ipcMain.handle("ai:add-model", async (event) => {
     const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
-      title: "GGUF-Modell auswählen",
+      title: text("pickModel"),
       properties: ["openFile"],
-      filters: [{ name: "GGUF-Modell", extensions: ["gguf"] }],
+      filters: [{ name: text("modelFilter"), extensions: ["gguf"] }],
     });
     if (canceled || filePaths.length === 0) return;
     const settings = await readModelSettings();
@@ -644,15 +651,15 @@ async function checkForUpdates() {
   autoUpdater.on("error", () => {});
   autoUpdater.on("update-available", async ({ version }) => {
     const { response } = await dialog.showMessageBox({
-      message: `SynapTeX ${version} ist verfügbar. Jetzt herunterladen?`,
-      buttons: ["Herunterladen", "Später"],
+      message: text("updateAvailable", { version }),
+      buttons: [text("download"), text("later")],
     });
     if (response === 0) autoUpdater.downloadUpdate();
   });
   autoUpdater.on("update-downloaded", async () => {
     const { response } = await dialog.showMessageBox({
-      message: "Das Update ist bereit. Jetzt neu starten?",
-      buttons: ["Neu starten", "Später"],
+      message: text("updateReady"),
+      buttons: [text("restart"), text("later")],
     });
     if (response === 0) autoUpdater.quitAndInstall();
   });

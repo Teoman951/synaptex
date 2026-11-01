@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/lib/i18n";
 import { autocompletion } from "@codemirror/autocomplete";
 import { StreamLanguage } from "@codemirror/language";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
@@ -27,7 +28,7 @@ export default function LatexEditor({ value, onChange, onReady, fontSize }: Late
       className="h-full"
       style={{ fontSize }}
       basicSetup={{ lineNumbers: true, indentOnInput: true, autocompletion: false }}
-      aria-label="LaTeX-Quelltext"
+      aria-label={t("sourceLabel")}
     />
   );
 }

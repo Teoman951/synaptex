@@ -56,5 +56,6 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   listTemplates: () => ipcRenderer.invoke("template:list"),
   createFromTemplate: (id) => ipcRenderer.invoke("template:create", id),
   searchProject: (query) => ipcRenderer.invoke("project:search", query),
+  setLanguage: (language) => ipcRenderer.invoke("app:set-language", language),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

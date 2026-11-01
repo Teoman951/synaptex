@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/lib/i18n";
 import "pdfjs-dist/web/pdf_viewer.css";
 import { useEffect, useRef, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
@@ -183,7 +184,7 @@ export function PdfPreview({
           disabled={isCompiling}
           className="rounded-lg bg-accent px-3 py-1 text-xs font-medium text-canvas disabled:opacity-60"
         >
-          {isCompiling ? "Kompiliert..." : "Kompilieren"}
+          {t(isCompiling ? "compiling" : "compile")}
         </button>
         {isCompiling && (
           <button
@@ -191,11 +192,11 @@ export function PdfPreview({
             onClick={onCancelCompile}
             className="rounded-lg border border-line px-3 py-1 text-xs hover:text-accent"
           >
-            Abbrechen
+            {t("cancel")}
           </button>
         )}
         <select
-          aria-label="LaTeX-Compiler"
+          aria-label={t("compiler")}
           value={engine}
           onChange={(event) => onEngineChange(event.target.value as Engine)}
           className="rounded border border-line bg-surface px-2 py-1 text-xs"
@@ -210,11 +211,11 @@ export function PdfPreview({
             onClick={onSavePdf}
             className="rounded-lg border border-line px-3 py-1 text-xs hover:text-accent"
           >
-            PDF speichern
+            {t("savePdf")}
           </button>
         )}
         <label
-          title="Kompiliert kurz nach der letzten Eingabe"
+          title={t("autoHint")}
           className="flex items-center gap-1 text-xs text-muted"
         >
           <input
@@ -226,11 +227,11 @@ export function PdfPreview({
           Auto
         </label>
         <span className="ml-auto text-xs text-muted">
-          {compileProgress ?? (pdf ? `${pageCount} ${pageCount === 1 ? "Seite" : "Seiten"}` : "")}
+          {compileProgress ?? (pdf ? t(pageCount === 1 ? "pageOne" : "pageMany", { count: pageCount }) : "")}
         </span>
         <button
           type="button"
-          aria-label="Verkleinern"
+          aria-label={t("zoomOut")}
           disabled={zoom <= MIN_ZOOM}
           onClick={() => setZoom(zoom - ZOOM_STEP)}
           className={zoomButton}
@@ -240,7 +241,7 @@ export function PdfPreview({
         <span className="w-10 text-center text-xs text-muted">{Math.round(zoom * 100)}%</span>
         <button
           type="button"
-          aria-label="Vergrößern"
+          aria-label={t("zoomIn")}
           disabled={zoom >= MAX_ZOOM}
           onClick={() => setZoom(zoom + ZOOM_STEP)}
           className={zoomButton}
@@ -251,7 +252,7 @@ export function PdfPreview({
 
       <div
         ref={pagesRef}
-        title="Klick springt zum Quelltext, Ziehen markiert Text"
+        title={t("pdfHint")}
         onClick={(event) => {
           // A drag selects text; only a plain click jumps to the source.
           if (!window.getSelection()?.isCollapsed) return;
@@ -270,7 +271,7 @@ export function PdfPreview({
       {result && result.errors.length > 0 && (
         <details open className="shrink-0 border-t border-line bg-surface">
           <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-red-400">
-            {result.errors.length} {result.errors.length === 1 ? "Problem" : "Probleme"}
+            {t(result.errors.length === 1 ? "problemOne" : "problemMany", { count: result.errors.length })}
           </summary>
           <ul role="alert" className="max-h-40 overflow-auto px-3 pb-3 font-mono text-xs text-red-400">
             {result.errors.map((error) => (
@@ -283,7 +284,7 @@ export function PdfPreview({
       )}
       {!pdf && (
         <p className="absolute inset-x-0 top-1/2 text-center text-sm text-muted">
-          {result ? "Kein PDF erzeugt." : "Noch kein PDF kompiliert."}
+          {t(result ? "noPdf" : "notCompiled")}
         </p>
       )}
     </div>

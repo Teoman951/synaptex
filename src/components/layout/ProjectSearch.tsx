@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import type { SearchMatch } from "@/types/desktop";
@@ -33,11 +34,11 @@ export function ProjectSearch({ onSelect }: ProjectSearchProps) {
         autoFocus
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Im Projekt suchen"
-        aria-label="Im Projekt suchen"
+        placeholder={t("searchInProject")}
+        aria-label={t("searchInProject")}
         className="w-full rounded border border-line bg-transparent px-2 py-1 outline-none focus:border-accent"
       />
-      {query && <p className="py-2 text-muted">{matches.length} Treffer</p>}
+      {query && <p className="py-2 text-muted">{t("matches", { count: matches.length })}</p>}
       {matches.map((match) => (
         <button
           key={`${match.file}:${match.line}`}

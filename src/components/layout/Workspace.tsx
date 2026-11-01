@@ -1,5 +1,6 @@
 "use client";
 
+import { language, t } from "@/lib/i18n";
 import dynamic from "next/dynamic";
 import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { EditorView } from "@uiw/react-codemirror";
@@ -54,6 +55,10 @@ function readAutoCompile() {
 
 export function Workspace() {
   const project = useProject();
+
+  useEffect(() => {
+    getDesktopApi()?.setLanguage(language);
+  }, []);
   const { save, saveAs, content } = project;
   const [renderFailed, setRenderFailed] = useState(false);
   const [autoCompile, setAutoCompile] = useState(
@@ -204,7 +209,7 @@ export function Workspace() {
     );
   }
 
-  const error = project.error ?? (renderFailed ? "Das PDF konnte nicht angezeigt werden." : null);
+  const error = project.error ?? (renderFailed ? t("pdfFailed") : null);
 
   return (
     <div className="flex h-full flex-col">
@@ -223,7 +228,7 @@ export function Workspace() {
               onApply={applyToEditor}
             />
           }
-          name={project.project?.name ?? "Neues Projekt"}
+          name={project.project?.name ?? t("newProject")}
           files={project.project?.files ?? [project.activeFile]}
           activeFile={project.activeFile}
           mainFile={project.project?.mainFile ?? null}
@@ -240,7 +245,7 @@ export function Workspace() {
           <PaneHeader title={project.isDirty ? `${project.activeFile} •` : project.activeFile}>
             <button
               type="button"
-              aria-label="Schrift verkleinern"
+              aria-label={t("smallerFont")}
               disabled={fontSize <= MIN_FONT_SIZE}
               onClick={() => changeFontSize(fontSize - 1)}
               className="px-2 hover:text-accent disabled:opacity-40"
@@ -250,7 +255,7 @@ export function Workspace() {
             <span className="w-6 text-center">{fontSize}</span>
             <button
               type="button"
-              aria-label="Schrift vergrößern"
+              aria-label={t("largerFont")}
               disabled={fontSize >= MAX_FONT_SIZE}
               onClick={() => changeFontSize(fontSize + 1)}
               className="px-2 hover:text-accent disabled:opacity-40"
@@ -265,7 +270,7 @@ export function Workspace() {
         <div
           role="separator"
           aria-orientation="vertical"
-          title="Ziehen ändert die Breite"
+          title={t("resizeHint")}
           onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
           onPointerMove={dragSplitter}
           onPointerUp={finishSplitterDrag}
