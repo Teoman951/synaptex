@@ -185,4 +185,7 @@ export const de: Record<string, string> = {
   "view.editor": "Editor",
   "view.both": "Beides",
   "view.pdf": "PDF",
+  fileRemoved: "gelöscht",
+  fileMissing: "Diese Datei wurde auf dem PC gelöscht. Änderungen werden nicht gespeichert.",
+  restoreFile: "Neu speichern",
 };

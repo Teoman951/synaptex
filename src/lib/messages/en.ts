@@ -185,4 +185,7 @@ export const en: Record<string, string> = {
   "view.editor": "Editor",
   "view.both": "Both",
   "view.pdf": "PDF",
+  fileRemoved: "deleted",
+  fileMissing: "This file was deleted on your computer. Changes are not saved.",
+  restoreFile: "Save again",
 };

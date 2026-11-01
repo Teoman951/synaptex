@@ -36,6 +36,7 @@ function buildTree(files: string[], images: string[], folders: string[]) {
 
 interface FileListProps {
   files: string[];
+  removedFiles: string[];
   images: string[];
   folders: string[];
   activeFile: string;
@@ -44,9 +45,9 @@ interface FileListProps {
   onInsertImage: (image: string) => void;
 }
 
-export function FileList({ files, images, folders, activeFile, mainFile, onSelect, onInsertImage }: FileListProps) {
+export function FileList({ files, removedFiles, images, folders, activeFile, mainFile, onSelect, onInsertImage }: FileListProps) {
   const [closed, setClosed] = useState<Set<string>>(new Set());
-  const tree = useMemo(() => buildTree(files, images, folders), [files, images, folders]);
+  const tree = useMemo(() => buildTree([...files, ...removedFiles], images, folders), [files, removedFiles, images, folders]);
 
   function toggle(path: string) {
     setClosed((current) => {
@@ -85,15 +86,17 @@ export function FileList({ files, images, folders, activeFile, mainFile, onSelec
             key={path}
             type="button"
             title={isImage ? t("insertImage") : path}
+            disabled={removedFiles.includes(path)}
             onClick={() => (isImage ? onInsertImage(path) : onSelect(path))}
             style={indent}
             className={`block w-full truncate py-1 pr-3 text-left text-xs hover:text-accent ${
               path === activeFile ? "bg-surface text-accent" : "text-muted"
-            }`}
+            } ${removedFiles.includes(path) ? "line-through opacity-50" : ""}`}
           >
             {isImage ? "🖼 " : ""}
             {name}
             {path === mainFile && t("mainFile")}
+            {removedFiles.includes(path) && ` (${t("fileRemoved")})`}
           </button>
         ))}
       </>

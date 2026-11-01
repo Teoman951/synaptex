@@ -185,4 +185,7 @@ export const es: Record<string, string> = {
   "view.editor": "Editor",
   "view.both": "Ambos",
   "view.pdf": "PDF",
+  fileRemoved: "eliminado",
+  fileMissing: "Este archivo se eliminó del ordenador. Los cambios no se guardan.",
+  restoreFile: "Guardar de nuevo",
 };

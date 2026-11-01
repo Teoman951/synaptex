@@ -12,6 +12,7 @@ interface ProjectSidebarProps {
   viewPicker: ReactNode;
   name: string;
   files: string[];
+  removedFiles: string[];
   activeFile: string;
   mainFile: string | null;
   outline: OutlineItem[];
@@ -34,6 +35,7 @@ export function ProjectSidebar({
   viewPicker,
   name,
   files,
+  removedFiles,
   activeFile,
   mainFile,
   outline,
@@ -131,6 +133,7 @@ export function ProjectSidebar({
         ) : (
           <FileList
             files={files}
+            removedFiles={removedFiles}
             images={images}
             folders={folders}
             activeFile={activeFile}

@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import type { CompileResult, Engine, OpenedProject, OutlineItem } from "@/types/desktop";
 
+const FILE_POLL_MS = 3000;
+const REMOVED_NOTICE_MS = 5000;
+
 export const ENGINES: Engine[] = ["tectonic", "pdflatex", "xelatex", "lualatex"];
 
 const INITIAL_DOCUMENT = String.raw`\documentclass{article}
@@ -31,6 +34,10 @@ export function useProject() {
   const [openFiles, setOpenFiles] = useState(["main.tex"]);
   const [images, setImages] = useState<string[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
+  // Deleted outside the app: shown greyed out for a moment, then dropped.
+  const [removedFiles, setRemovedFiles] = useState<string[]>([]);
+  // Open in a tab while deleted, so autosave must not bring them back unasked.
+  const [missingFiles, setMissingFiles] = useState<string[]>([]);
   const [content, setContent] = useState(INITIAL_DOCUMENT);
   const [savedContent, setSavedContent] = useState(INITIAL_DOCUMENT);
   const [engine, setEngine] = useState<Engine>("pdflatex");
@@ -127,7 +134,7 @@ export function useProject() {
   // Resolves to false when the document has nowhere to go yet.
   async function writeActiveFile() {
     if (!project) return false;
-    if (isDirty) {
+    if (isDirty && !missingFiles.includes(activeFile)) {
       await getDesktopApi()?.writeFile(activeFile, content);
       setSavedContent(content);
     }
@@ -142,6 +149,40 @@ export function useProject() {
   }
 
   // Closing the active tab moves to its neighbour; the last tab stays open.
+  // Polling also picks up files added from outside.
+  useEffect(() => {
+    if (!mainFile) return;
+    const timer = setInterval(async () => {
+      const listed = await getDesktopApi()?.projectFiles();
+      if (!listed) return;
+      setImages(listed.images);
+      setFolders(listed.folders);
+      setMissingFiles((current) => openFiles.filter((file) => !listed.files.includes(file) && (current.includes(file) || file !== "")));
+      setProject((current) => {
+        if (!current) return current;
+        const gone = current.files.filter((file) => !listed.files.includes(file));
+        if (gone.length === 0 && current.files.length === listed.files.length) return current;
+        const closed = gone.filter((file) => !openFiles.includes(file));
+        setRemovedFiles((removed) => [...new Set([...removed, ...closed])]);
+        setTimeout(
+          () => setRemovedFiles((removed) => removed.filter((file) => !closed.includes(file))),
+          REMOVED_NOTICE_MS,
+        );
+        return { ...current, files: listed.files };
+      });
+    }, FILE_POLL_MS);
+    return () => clearInterval(timer);
+  }, [mainFile, openFiles]);
+
+  function restoreMissingFile() {
+    return attempt(async () => {
+      await getDesktopApi()?.createFile(activeFile, content);
+      setMissingFiles((files) => files.filter((file) => file !== activeFile));
+      setSavedContent(content);
+      await refreshFiles();
+    });
+  }
+
   async function refreshFiles() {
     const listed = await getDesktopApi()?.projectFiles();
     if (!listed) return;
@@ -184,6 +225,7 @@ export function useProject() {
 
   async function closeFile(file: string) {
     if (openFiles.length === 1) return;
+    setMissingFiles((files) => files.filter((item) => item !== file));
     const index = openFiles.indexOf(file);
     const remaining = openFiles.filter((item) => item !== file);
     if (file === activeFile) await selectFile(remaining[Math.max(0, index - 1)]);
@@ -261,6 +303,9 @@ export function useProject() {
     closeFile,
     images,
     folders,
+    removedFiles,
+    missingFiles,
+    restoreMissingFile,
     refreshFiles,
     createFile,
     createFolder,

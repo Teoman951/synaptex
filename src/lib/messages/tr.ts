@@ -185,4 +185,7 @@ export const tr: Record<string, string> = {
   "view.editor": "Editör",
   "view.both": "İkisi",
   "view.pdf": "PDF",
+  fileRemoved: "silindi",
+  fileMissing: "Bu dosya bilgisayarda silindi. Değişiklikler kaydedilmez.",
+  restoreFile: "Yeniden kaydet",
 };

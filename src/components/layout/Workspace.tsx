@@ -297,6 +297,7 @@ export function Workspace() {
           }
           name={project.project?.name ?? t("newProject")}
           files={project.project?.files ?? [project.activeFile]}
+          removedFiles={project.removedFiles}
           activeFile={project.activeFile}
           mainFile={project.project?.mainFile ?? null}
           outline={project.outline}
@@ -371,6 +372,14 @@ export function Workspace() {
               A+
             </button>
           </PaneHeader>
+          {project.missingFiles.includes(project.activeFile) && (
+            <p role="alert" className="flex items-center gap-3 border-b border-line px-4 py-1 text-xs text-amber-400">
+              {t("fileMissing")}
+              <button type="button" onClick={project.restoreMissingFile} className="text-accent hover:underline">
+                {t("restoreFile")}
+              </button>
+            </p>
+          )}
           <div className="min-h-0 flex-1">
             <LatexEditor value={content} onChange={project.setContent} onReady={onEditorReady} fontSize={fontSize} />
           </div>
