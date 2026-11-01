@@ -11,7 +11,7 @@ interface ProjectSidebarProps {
   mainFile: string | null;
   outline: OutlineItem[];
   onBack: () => void;
-  onSave: () => void;
+  canSave: boolean;
   onSaveAs: () => void;
   onSelectFile: (file: string) => void;
   onRestoreCheckpoint: (id: string) => void;
@@ -26,7 +26,7 @@ export function ProjectSidebar({
   mainFile,
   outline,
   onBack,
-  onSave,
+  canSave,
   onSaveAs,
   onSelectFile,
   onRestoreCheckpoint,
@@ -38,10 +38,6 @@ export function ProjectSidebar({
     { id: "chat", label: "Unterhaltungen" },
     { id: "history", label: "Verlauf" },
   ] as const;
-  const actions = [
-    { label: "Speichern", onClick: onSave },
-    { label: "Speichern unter", onClick: onSaveAs },
-  ];
 
   return (
     <aside className={`flex shrink-0 flex-col border-r border-line ${tab === "chat" ? "w-96" : "w-60"}`}>
@@ -52,13 +48,12 @@ export function ProjectSidebar({
         <p title={name} className="mt-2 truncate text-sm font-semibold">
           {name}
         </p>
-        <div className="mt-2 flex gap-3">
-          {actions.map(({ label, onClick }) => (
-            <button key={label} type="button" onClick={onClick} className="text-xs text-muted hover:text-accent">
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* Saved projects save themselves; only a new document needs a place first. */}
+        {canSave && (
+          <button type="button" onClick={onSaveAs} className="mt-2 text-xs text-accent hover:underline">
+            Speicherort wählen
+          </button>
+        )}
       </div>
 
       <div role="tablist" className="flex gap-4 border-b border-line px-3 pt-3">

@@ -8,13 +8,8 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 }
 
-interface ModelPickerProps {
-  onChange: () => void;
-}
-
-export function ModelPicker({ onChange }: ModelPickerProps) {
+export function ModelPicker() {
   const [overview, setOverview] = useState<ModelOverview | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
   const [catalog, setCatalog] = useState<CatalogModel[]>([]);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
   const [downloadError, setDownloadError] = useState(false);
@@ -35,7 +30,6 @@ export function ModelPicker({ onChange }: ModelPickerProps) {
   async function update(action: () => Promise<unknown> | undefined) {
     await action();
     await load();
-    onChange();
   }
 
   async function download(model: CatalogModel) {
@@ -51,6 +45,17 @@ export function ModelPicker({ onChange }: ModelPickerProps) {
     setProgress(null);
   }
 
+  async function installServer() {
+    setDownloadError(false);
+    setProgress({ label: "llama.cpp", percent: 0 });
+    try {
+      await update(() => getDesktopApi()?.installServer());
+    } catch {
+      setDownloadError(true);
+    }
+    setProgress(null);
+  }
+
   function trash(model: AiModel) {
     if (!window.confirm(`„${model.name}“ in den Papierkorb verschieben?`)) return;
     return update(() => getDesktopApi()?.trashModel(model.id));
@@ -58,23 +63,13 @@ export function ModelPicker({ onChange }: ModelPickerProps) {
 
   if (!overview) return null;
   const active = overview.models.find((model) => model.id === overview.activeId);
-  const showList = isOpen || !active || !overview.hasServer;
   const api = getDesktopApi();
 
   return (
-    <div className="border-b border-line text-xs">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:text-accent"
-      >
-        <span className="text-muted">Modell</span>
-        <span className="min-w-0 flex-1 truncate">{active?.name ?? "Keines ausgewählt"}</span>
-        <span aria-hidden>{showList ? "▴" : "▾"}</span>
-      </button>
-
-      {showList && (
-        <div className="max-h-64 overflow-auto px-3 pb-3">
+    <div className="max-w-2xl p-4 text-xs">
+      <p className="py-2 text-muted">Aktiv: <span className="text-foreground">{active?.name ?? "Keines ausgewählt"}</span></p>
+      {(
+        <div>
           {overview.models.length === 0 && <p className="py-2 text-muted">Keine Modelle gefunden.</p>}
           {overview.models.map((model) => (
             <div key={model.id} className="flex items-center gap-2 py-1">
@@ -143,8 +138,18 @@ export function ModelPicker({ onChange }: ModelPickerProps) {
               + Modell hinzufügen
             </button>
             <button type="button" onClick={() => update(() => api?.pickServer())} className="text-accent hover:underline">
-              {overview.hasServer ? "llama-server ändern" : "llama-server wählen"}
+              {overview.hasServer ? "llama-server ändern" : "Vorhandenen llama-server wählen"}
             </button>
+            {!overview.hasServer && (
+              <button
+                type="button"
+                disabled={progress !== null}
+                onClick={installServer}
+                className="text-accent hover:underline disabled:opacity-40"
+              >
+                llama-server einrichten
+              </button>
+            )}
           </div>
         </div>
       )}

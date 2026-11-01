@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from "elect
 import updater from "electron-updater";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createCheckpoint, listCheckpoints, loadCheckpoint } from "./checkpoints.mjs";
@@ -276,6 +276,17 @@ function registerProjectHandlers() {
     });
   });
 
+  ipcMain.handle("project:save-pdf", async (event, mainFile) => {
+    resolveInProject(mainFile);
+    const name = `${path.basename(mainFile, ".tex")}.pdf`;
+    const { canceled, filePath } = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), {
+      defaultPath: path.join(projectRoot, name),
+      filters: [{ name: "PDF", extensions: ["pdf"] }],
+    });
+    if (canceled || !filePath) return;
+    await copyFile(path.join(buildFolder(), name), filePath);
+  });
+
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));
 
   ipcMain.handle("project:write", (_event, file, content) =>
@@ -448,6 +459,17 @@ function registerChatHandlers() {
     await writeModelSettings({ ...settings, modelPath: target });
   });
 
+  ipcMain.handle("ai:install-server", async (event) => {
+    downloadAbort = new AbortController();
+    const serverPath = await installLlamaServer({
+      folder: path.join(app.getPath("userData"), "llama"),
+      signal: downloadAbort.signal,
+      onProgress: (share) =>
+        event.sender.send("ai:download-progress", { label: "llama.cpp", percent: Math.floor(share * 100) }),
+    });
+    await writeModelSettings({ ...(await readModelSettings()), serverPath });
+  });
+
   ipcMain.handle("ai:pick-server", async (event) => {
     const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
       title: "llama-server auswählen",
@@ -567,7 +589,6 @@ function createWindow() {
     if (new URL(url).origin !== appOrigin) event.preventDefault();
   });
 
-  if (isDev) window.webContents.openDevTools({ mode: "detach" });
   window.loadURL(isDev ? DEV_URL : `${APP_URL}/index.html`);
 }
 

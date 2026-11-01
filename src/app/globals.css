@@ -31,3 +31,7 @@ body {
 .cm-editor .cm-gutters {
   background: #000 !important;
 }
+
+.textLayer ::selection {
+  background: rgb(37 99 235 / 40%);
+}

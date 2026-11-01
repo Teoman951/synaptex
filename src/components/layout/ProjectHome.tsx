@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ModelPicker } from "@/components/chat/ModelPicker";
 import { Logo } from "@/components/layout/Logo";
 import { getDesktopApi } from "@/lib/desktop";
 import type { RecentProject } from "@/types/desktop";
@@ -26,6 +27,7 @@ export function ProjectHome({
 }: ProjectHomeProps) {
   const [projects, setProjects] = useState<RecentProject[]>([]);
   const [query, setQuery] = useState("");
+  const [view, setView] = useState<"projects" | "models">("projects");
 
   useEffect(() => {
     getDesktopApi()?.recentProjects().then(setProjects);
@@ -44,9 +46,33 @@ export function ProjectHome({
     <div className="flex h-full">
       <aside className="w-48 shrink-0 p-4">
         <Logo />
-        <p className="mt-8 rounded-lg bg-surface px-3 py-2 text-xs">Deine Projekte</p>
+        <nav className="mt-8 flex flex-col gap-1">
+          {(
+            [
+              { id: "projects", label: "Deine Projekte" },
+              { id: "models", label: "KI-Modelle" },
+            ] as const
+          ).map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setView(id)}
+              className={`rounded-lg px-3 py-2 text-left text-xs ${view === id ? "bg-surface" : "text-muted hover:text-accent"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
       </aside>
 
+      {view === "models" && (
+        <main className="min-w-0 flex-1 overflow-auto bg-surface/40">
+          <h1 className="border-b border-line p-4 text-base font-semibold">KI-Modelle</h1>
+          <ModelPicker />
+        </main>
+      )}
+
+      {view === "projects" && (
       <main className="flex min-w-0 flex-1 flex-col bg-surface/40">
         <header className="flex flex-wrap items-center gap-2 border-b border-line p-4">
           <h1 className="mr-auto text-base font-semibold">Deine Projekte</h1>
@@ -109,6 +135,7 @@ export function ProjectHome({
           ))}
         </div>
       </main>
+      )}
     </div>
   );
 }

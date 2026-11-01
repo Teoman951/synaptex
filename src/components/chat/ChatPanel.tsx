@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ModelPicker } from "@/components/chat/ModelPicker";
 import { getDesktopApi } from "@/lib/desktop";
 import { diffLines } from "@/lib/lineDiff";
 import type { ChatMessage, Conversation, ConversationSummary } from "@/types/desktop";
@@ -186,12 +185,9 @@ export function ChatPanel({ projectName, getContext, getSelection, onApply }: Ch
 
   if (!isConfigured) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <ModelPicker onChange={refresh} />
-        <p className="p-3 text-xs text-muted">
-          Wähle ein Modell und <code>llama-server</code> aus. Alles bleibt auf diesem Rechner.
-        </p>
-      </div>
+      <p className="p-3 text-xs text-muted">
+        Richte die KI auf dem Startbildschirm unter <strong>KI-Modelle</strong> ein. Alles bleibt auf diesem Rechner.
+      </p>
     );
   }
 
@@ -205,7 +201,6 @@ export function ChatPanel({ projectName, getContext, getSelection, onApply }: Ch
 
   return (
     <div className="flex min-h-0 flex-1 flex-col text-xs">
-      <ModelPicker onChange={refresh} />
       {storageBanner && (
         <p
           role="alert"

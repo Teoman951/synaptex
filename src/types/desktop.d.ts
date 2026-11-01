@@ -135,6 +135,8 @@ export interface SynaptexDesktopApi {
     x: number,
     y: number,
   ) => Promise<{ file: string; line: number } | null>;
+  savePdf: (mainFile: string) => Promise<void>;
+  installServer: () => Promise<void>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

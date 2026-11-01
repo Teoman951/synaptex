@@ -51,5 +51,7 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   listCheckpoints: () => ipcRenderer.invoke("checkpoint:list"),
   restoreCheckpoint: (id, activeFile) => ipcRenderer.invoke("checkpoint:restore", id, activeFile),
   locateSource: (mainFile, page, x, y) => ipcRenderer.invoke("project:locate-source", mainFile, page, x, y),
+  savePdf: (mainFile) => ipcRenderer.invoke("project:save-pdf", mainFile),
+  installServer: () => ipcRenderer.invoke("ai:install-server"),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

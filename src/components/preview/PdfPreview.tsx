@@ -1,5 +1,6 @@
 "use client";
 
+import "pdfjs-dist/web/pdf_viewer.css";
 import { useEffect, useRef, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import { hintFor } from "@/lib/latexErrorHints";
@@ -29,15 +30,16 @@ async function renderPdf(
   isCancelled: () => boolean,
 ) {
   const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerPort ??= new Worker(
-    new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
-    { type: "module" },
-  );
+  // workerSrc, not workerPort: destroying a document ends a shared port.
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url,
+  ).href;
 
   // pdf.js takes ownership of the buffer, so it gets a copy.
   const loadingTask = pdfjs.getDocument({ data: data.slice() });
   const document = await loadingTask.promise;
-  const pages: HTMLCanvasElement[] = [];
+  const pages: HTMLDivElement[] = [];
   // Leaves room for padding and the scrollbar that appears with the pages.
   const width = (container.clientWidth - 48) * zoom;
 
@@ -50,16 +52,33 @@ async function renderPdf(
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     canvas.style.width = `${width}px`;
-    canvas.className = "mx-auto mb-4 max-w-none rounded-sm bg-white";
-    canvas.dataset.page = String(number);
-    canvas.dataset.pointWidth = String(page.getViewport({ scale: 1 }).width);
+    canvas.className = "block max-w-none rounded-sm bg-white";
     await page.render({ canvas, viewport }).promise;
-    pages.push(canvas);
+
+    const wrapper = window.document.createElement("div");
+    wrapper.className = "relative mx-auto mb-4";
+    wrapper.style.width = `${width}px`;
+    wrapper.style.setProperty("--total-scale-factor", String(scale));
+    wrapper.dataset.page = String(number);
+    wrapper.dataset.pointWidth = String(page.getViewport({ scale: 1 }).width);
+
+    // Transparent text above the canvas makes the page selectable.
+    const textContainer = window.document.createElement("div");
+    textContainer.className = "textLayer";
+    await new pdfjs.TextLayer({
+      textContentSource: page.streamTextContent(),
+      container: textContainer,
+      viewport: page.getViewport({ scale }),
+    }).render();
+
+    wrapper.append(canvas, textContainer);
+    pages.push(wrapper);
   }
 
   if (!isCancelled()) {
     container.replaceChildren(...pages);
-    if (pages[0]) await saveThumbnail(pages[0]);
+    const firstPage = pages[0]?.querySelector("canvas");
+    if (firstPage) await saveThumbnail(firstPage);
   }
   const pageCount = document.numPages;
   await loadingTask.destroy();
@@ -102,6 +121,7 @@ interface PdfPreviewProps {
   compileProgress: string | null;
   onCompile: () => void;
   onCancelCompile: () => void;
+  onSavePdf: () => void;
   onSelectError: (file: string, line: number) => void;
   onSelectPdfPoint: (page: number, x: number, y: number) => void;
   autoCompile: boolean;
@@ -117,6 +137,7 @@ export function PdfPreview({
   compileProgress,
   onCompile,
   onCancelCompile,
+  onSavePdf,
   onSelectError,
   onSelectPdfPoint,
   autoCompile,
@@ -181,6 +202,15 @@ export function PdfPreview({
             <option key={name}>{name}</option>
           ))}
         </select>
+        {pdf && (
+          <button
+            type="button"
+            onClick={onSavePdf}
+            className="rounded-lg border border-line px-3 py-1 text-xs hover:text-accent"
+          >
+            PDF speichern
+          </button>
+        )}
         <label
           title="Kompiliert kurz nach der letzten Eingabe"
           className="flex items-center gap-1 text-xs text-muted"
@@ -219,15 +249,18 @@ export function PdfPreview({
 
       <div
         ref={pagesRef}
-        title="Klick springt zur Stelle im Quelltext"
+        title="Klick springt zum Quelltext, Ziehen markiert Text"
         onClick={(event) => {
-          const { target, nativeEvent } = event;
-          if (!(target instanceof HTMLCanvasElement)) return;
-          const pointsPerPixel = Number(target.dataset.pointWidth) / target.clientWidth;
+          // A drag selects text; only a plain click jumps to the source.
+          if (!window.getSelection()?.isCollapsed) return;
+          const page = (event.target as HTMLElement).closest<HTMLElement>("[data-page]");
+          if (!page) return;
+          const box = page.getBoundingClientRect();
+          const pointsPerPixel = Number(page.dataset.pointWidth) / box.width;
           onSelectPdfPoint(
-            Number(target.dataset.page),
-            nativeEvent.offsetX * pointsPerPixel,
-            nativeEvent.offsetY * pointsPerPixel,
+            Number(page.dataset.page),
+            (event.clientX - box.left) * pointsPerPixel,
+            (event.clientY - box.top) * pointsPerPixel,
           );
         }}
         className="min-h-0 flex-1 overflow-auto p-4"

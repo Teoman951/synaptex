@@ -168,7 +168,7 @@ export function Workspace() {
           mainFile={project.project?.mainFile ?? null}
           outline={project.outline}
           onBack={project.close}
-          onSave={save}
+          canSave={!project.project}
           onSaveAs={saveAs}
           onSelectFile={project.selectFile}
           onRestoreCheckpoint={project.restoreCheckpoint}
@@ -190,6 +190,10 @@ export function Workspace() {
             compileProgress={project.compileProgress}
             onCompile={startCompile}
             onCancelCompile={project.cancelCompile}
+            onSavePdf={() => {
+              const mainFile = project.project?.mainFile;
+              if (mainFile) getDesktopApi()?.savePdf(mainFile);
+            }}
             onSelectError={jumpTo}
             onSelectPdfPoint={jumpToPdfPoint}
             autoCompile={autoCompile}
