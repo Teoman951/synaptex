@@ -10,7 +10,7 @@
 
 Write and compile LaTeX without a cloud. Your documents and AI conversations stay on your computer.
 
-[![Download for Windows](https://img.shields.io/badge/Download_for_Windows-2563eb?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest)
+[![Download for Windows](https://img.shields.io/badge/Download_for_Windows-2563eb?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest) [![Download for Linux](https://img.shields.io/badge/Download_for_Linux-16a34a?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest)
 
 <sub>Windows shows a warning on first start because the installer is not signed yet: choose "More info", then "Run anyway".</sub>
 
@@ -38,7 +38,7 @@ Small local models make mistakes. Check suggestions before applying them.
 
 ## Status
 
-SynapTeX is in early development and tested on Windows. The interface is in German. macOS and Linux are untested.
+SynapTeX is in early development and tested on Windows. The interface is in German. Linux is offered but untested. macOS is not available yet.
 
 **Network:** On start the app checks GitHub for updates and asks before downloading. Packages and models are downloaded only when needed.
 

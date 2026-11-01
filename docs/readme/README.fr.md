@@ -10,7 +10,7 @@
 
 Écrivez et compilez du LaTeX sans cloud. Vos documents et vos conversations avec l'IA restent sur votre ordinateur.
 
-[![Télécharger pour Windows](https://img.shields.io/badge/T%C3%A9l%C3%A9charger_pour_Windows-2563eb?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest)
+[![Télécharger pour Windows](https://img.shields.io/badge/T%C3%A9l%C3%A9charger_pour_Windows-2563eb?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest) [![Télécharger pour Linux](https://img.shields.io/badge/T%C3%A9l%C3%A9charger_pour_Linux-16a34a?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest)
 
 <sub>Windows affiche un avertissement au premier lancement, car l'installateur n'est pas encore signé : choisissez « Informations complémentaires », puis « Exécuter quand même ».</sub>
 
@@ -38,7 +38,7 @@ Les petits modèles locaux font des erreurs. Vérifiez les suggestions avant de 
 
 ## État du projet
 
-SynapTeX est en début de développement et testé sous Windows. L'interface est en allemand. macOS et Linux n'ont pas été testés.
+SynapTeX est en début de développement et testé sous Windows. L'interface est en allemand. Linux est proposé mais non testé. macOS n'est pas encore disponible.
 
 **Réseau :** Au démarrage, l'application vérifie les mises à jour sur GitHub et demande avant de télécharger. Les paquets et les modèles ne sont téléchargés qu'en cas de besoin.
 

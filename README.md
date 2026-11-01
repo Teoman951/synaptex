@@ -10,7 +10,7 @@
 
 Schreibe und kompiliere LaTeX ohne Cloud. Deine Dokumente und KI-Unterhaltungen bleiben auf deinem Computer.
 
-[![Für Windows herunterladen](https://img.shields.io/badge/F%C3%BCr_Windows_herunterladen-2563eb?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest)
+[![Für Windows herunterladen](https://img.shields.io/badge/F%C3%BCr_Windows_herunterladen-2563eb?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest) [![Für Linux herunterladen](https://img.shields.io/badge/F%C3%BCr_Linux_herunterladen-16a34a?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest)
 
 <sub>Windows zeigt beim ersten Start eine Warnung, weil der Installer noch nicht signiert ist: „Weitere Informationen“, dann „Trotzdem ausführen“.</sub>
 
@@ -57,7 +57,7 @@ Kleine lokale Modelle machen Fehler. Prüfe Vorschläge, bevor du sie übernimms
 
 ## Status
 
-SynapTeX ist in früher Entwicklung und getestet unter Windows. macOS und Linux sind vorbereitet, aber ungetestet. Der Installer ist noch nicht signiert, Windows zeigt deshalb eine Warnung.
+SynapTeX ist in früher Entwicklung und getestet unter Windows. Linux wird angeboten, ist aber ungetestet. macOS gibt es noch nicht. Der Installer ist noch nicht signiert, Windows zeigt deshalb eine Warnung.
 
 Geplant ist unter anderem Zusammenarbeit.
 

@@ -175,7 +175,7 @@ async function loadProject(root, activeFile) {
 
 function tectonicPath() {
   const root = app.isPackaged ? process.resourcesPath : path.join(electronDir, "..", "vendor");
-  return path.join(root, "tectonic", "tectonic.exe");
+  return path.join(root, "tectonic", process.platform === "win32" ? "tectonic.exe" : "tectonic");
 }
 
 function buildFolder() {
