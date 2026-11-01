@@ -30,6 +30,7 @@ export function useProject() {
   const [activeFile, setActiveFile] = useState("main.tex");
   const [openFiles, setOpenFiles] = useState(["main.tex"]);
   const [images, setImages] = useState<string[]>([]);
+  const [folders, setFolders] = useState<string[]>([]);
   const [content, setContent] = useState(INITIAL_DOCUMENT);
   const [savedContent, setSavedContent] = useState(INITIAL_DOCUMENT);
   const [engine, setEngine] = useState<Engine>("pdflatex");
@@ -65,7 +66,9 @@ export function useProject() {
     getDesktopApi()
       ?.projectFiles()
       .then((listed) => {
-        if (!cancelled) setImages(listed.images);
+        if (cancelled) return;
+        setImages(listed.images);
+        setFolders(listed.folders);
       });
     return () => {
       cancelled = true;
@@ -143,6 +146,7 @@ export function useProject() {
     const listed = await getDesktopApi()?.projectFiles();
     if (!listed) return;
     setImages(listed.images);
+    setFolders(listed.folders);
     setProject((current) => (current ? { ...current, files: listed.files } : current));
   }
 
@@ -246,6 +250,7 @@ export function useProject() {
     openFiles,
     closeFile,
     images,
+    folders,
     refreshFiles,
     createFile,
     createFolder,

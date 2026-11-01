@@ -248,6 +248,7 @@ export function Workspace() {
           onSaveAs={saveAs}
           onSelectFile={project.selectFile}
           images={project.images}
+          folders={project.folders}
           onInsertImage={insertImage}
           onCreateFile={project.createFile}
           onCreateFolder={project.createFolder}

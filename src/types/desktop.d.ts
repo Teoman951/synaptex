@@ -212,7 +212,7 @@ export interface SynaptexDesktopApi {
   mcpProposals: () => Promise<McpProposal[]>;
   mcpApprove: (id: string) => Promise<void>;
   mcpReject: (id: string) => Promise<void>;
-  projectFiles: () => Promise<{ files: string[]; images: string[] }>;
+  projectFiles: () => Promise<{ files: string[]; images: string[]; folders: string[] }>;
   createFile: (file: string, content?: string) => Promise<string>;
   createFolder: (folder: string) => Promise<void>;
   addImages: () => Promise<string[]>;

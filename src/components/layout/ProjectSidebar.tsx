@@ -19,6 +19,7 @@ interface ProjectSidebarProps {
   onSaveAs: () => void;
   onSelectFile: (file: string) => void;
   images: string[];
+  folders: string[];
   onInsertImage: (image: string) => void;
   onCreateFile: (name: string) => void;
   onCreateFolder: (name: string) => void;
@@ -39,6 +40,7 @@ export function ProjectSidebar({
   onSaveAs,
   onSelectFile,
   images,
+  folders,
   onInsertImage,
   onCreateFile,
   onCreateFolder,
@@ -126,6 +128,11 @@ export function ProjectSidebar({
         ) : (
           <>
             <FileList files={files} activeFile={activeFile} mainFile={mainFile} onSelect={onSelectFile} />
+            {folders.map((folder) => (
+              <p key={folder} title={folder} className="truncate px-3 py-1 text-xs text-muted">
+                📁 {folder}
+              </p>
+            ))}
             {images.map((image) => (
               <button
                 key={image}

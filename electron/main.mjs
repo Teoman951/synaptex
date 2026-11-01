@@ -114,6 +114,17 @@ function resolveNewPath(relativePath) {
   return resolved;
 }
 
+async function listFolders(root, relative = "") {
+  const folders = [];
+  const entries = await readdir(path.join(root, relative), { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith(".") || IGNORED_FOLDERS.has(entry.name)) continue;
+    const entryPath = path.posix.join(relative, entry.name);
+    folders.push(entryPath, ...(await listFolders(root, entryPath)));
+  }
+  return folders;
+}
+
 async function listImages(root, relative = "") {
   const images = [];
   const entries = await readdir(path.join(root, relative), { withFileTypes: true });
@@ -372,7 +383,13 @@ function registerProjectHandlers() {
   );
 
   ipcMain.handle("project:files", async () =>
-    projectRoot ? { files: await listTextFiles(projectRoot), images: await listImages(projectRoot) } : { files: [], images: [] },
+    projectRoot
+      ? {
+          files: await listTextFiles(projectRoot),
+          images: await listImages(projectRoot),
+          folders: await listFolders(projectRoot),
+        }
+      : { files: [], images: [], folders: [] },
   );
 
   ipcMain.handle("project:create-file", async (_event, file, content) => {
