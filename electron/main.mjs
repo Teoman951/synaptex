@@ -14,6 +14,7 @@ import {
   loadConversation,
   saveConversation,
 } from "./conversations.mjs";
+import { detectModels, withDetails } from "./models.mjs";
 import { buildOutline } from "./outline.mjs";
 import { extractZip } from "./zipImport.mjs";
 
@@ -297,11 +298,37 @@ function aiSettingsFile() {
   return path.join(app.getPath("userData"), "ai-settings.json");
 }
 
+async function readModelSettings() {
+  const raw = await readFile(aiSettingsFile(), "utf8").catch(() => "{}");
+  return { serverPath: null, modelPath: null, userModels: [], ...JSON.parse(raw) };
+}
+
+function writeModelSettings(settings) {
+  return writeFile(aiSettingsFile(), JSON.stringify(settings), "utf8");
+}
+
 async function readAiSettings() {
-  const raw = await readFile(aiSettingsFile(), "utf8").catch(() => null);
-  const settings = raw ? JSON.parse(raw) : null;
-  const usable = settings && existsSync(settings.serverPath) && existsSync(settings.modelPath);
+  const settings = await readModelSettings();
+  const usable = settings.serverPath && settings.modelPath
+    && existsSync(settings.serverPath) && existsSync(settings.modelPath);
   return usable ? settings : null;
+}
+
+async function allModels(settings) {
+  const detected = await detectModels(app.getPath("home"), process.env.LOCALAPPDATA);
+  const known = new Set(detected.map((model) => model.path));
+  const added = [...new Set([...settings.userModels, settings.modelPath])]
+    .filter((file) => file && !known.has(file))
+    .map((file) => ({ path: file, name: path.basename(file, ".gguf"), source: "Hinzugefügt" }));
+  const models = await Promise.all([...added, ...detected].map(withDetails));
+  return models.filter(Boolean);
+}
+
+// The renderer picks models by id, so it can only act on what the list offers.
+async function findModel(settings, id) {
+  const model = (await allModels(settings)).find((item) => item.id === id);
+  if (!model) throw new Error("Unknown model");
+  return model;
 }
 
 function conversationsFolder() {
@@ -346,22 +373,65 @@ async function compressConversation(folder, conversation, settings) {
 function registerChatHandlers() {
   ipcMain.handle("ai:configured", async () => Boolean(await readAiSettings()));
 
-  ipcMain.handle("ai:configure", async (event) => {
-    const window = BrowserWindow.fromWebContents(event.sender);
-    const server = await dialog.showOpenDialog(window, {
+  ipcMain.handle("ai:models", async () => {
+    const settings = await readModelSettings();
+    const models = await allModels(settings);
+    return {
+      hasServer: Boolean(settings.serverPath && existsSync(settings.serverPath)),
+      activeId: models.find((model) => model.path === settings.modelPath)?.id ?? null,
+      models: models.map(({ id, name, source, bytes }) => ({ id, name, source, bytes })),
+    };
+  });
+
+  ipcMain.handle("ai:pick-server", async (event) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
       title: "llama-server auswählen",
       properties: ["openFile"],
     });
-    if (server.canceled || server.filePaths.length === 0) return false;
-    const model = await dialog.showOpenDialog(window, {
+    if (canceled || filePaths.length === 0) return;
+    await writeModelSettings({ ...(await readModelSettings()), serverPath: filePaths[0] });
+  });
+
+  ipcMain.handle("ai:add-model", async (event) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
       title: "GGUF-Modell auswählen",
       properties: ["openFile"],
       filters: [{ name: "GGUF-Modell", extensions: ["gguf"] }],
     });
-    if (model.canceled || model.filePaths.length === 0) return false;
-    const settings = { serverPath: server.filePaths[0], modelPath: model.filePaths[0] };
-    await writeFile(aiSettingsFile(), JSON.stringify(settings), "utf8");
-    return true;
+    if (canceled || filePaths.length === 0) return;
+    const settings = await readModelSettings();
+    const userModels = [...new Set([...settings.userModels, filePaths[0]])];
+    await writeModelSettings({ ...settings, userModels, modelPath: filePaths[0] });
+  });
+
+  ipcMain.handle("ai:select-model", async (_event, id) => {
+    const settings = await readModelSettings();
+    const { path: modelPath } = await findModel(settings, id);
+    await writeModelSettings({ ...settings, modelPath });
+  });
+
+  ipcMain.handle("ai:remove-model", async (_event, id) => {
+    const settings = await readModelSettings();
+    const { path: file } = await findModel(settings, id);
+    await writeModelSettings({
+      ...settings,
+      userModels: settings.userModels.filter((item) => item !== file),
+      modelPath: settings.modelPath === file ? null : settings.modelPath,
+    });
+  });
+
+  // Ollama blobs can be shared between models, so they stay with Ollama.
+  ipcMain.handle("ai:trash-model", async (_event, id) => {
+    const settings = await readModelSettings();
+    const model = await findModel(settings, id);
+    if (model.source === "Ollama") throw new Error("Managed by Ollama");
+    if (settings.modelPath === model.path) stopServer();
+    await shell.trashItem(model.path);
+    await writeModelSettings({
+      ...settings,
+      userModels: settings.userModels.filter((item) => item !== model.path),
+      modelPath: settings.modelPath === model.path ? null : settings.modelPath,
+    });
   });
 
   ipcMain.handle("chat:list", () => listConversations(conversationsFolder()));

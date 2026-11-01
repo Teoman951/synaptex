@@ -18,6 +18,19 @@ export interface RecentProject {
   thumbnail: string | null;
 }
 
+export interface AiModel {
+  id: string;
+  name: string;
+  source: string;
+  bytes: number;
+}
+
+export interface ModelOverview {
+  hasServer: boolean;
+  activeId: string | null;
+  models: AiModel[];
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -85,7 +98,12 @@ export interface SynaptexDesktopApi {
   cancelCompile: () => Promise<void>;
   saveThumbnail: (dataUrl: string) => Promise<void>;
   aiConfigured: () => Promise<boolean>;
-  configureAi: () => Promise<boolean>;
+  listModels: () => Promise<ModelOverview>;
+  pickServer: () => Promise<void>;
+  addModel: () => Promise<void>;
+  selectModel: (id: string) => Promise<void>;
+  removeModel: (id: string) => Promise<void>;
+  trashModel: (id: string) => Promise<void>;
   cancelAi: () => Promise<void>;
   onAiToken: (listener: (token: string) => void) => () => void;
   listConversations: () => Promise<ConversationSummary[]>;

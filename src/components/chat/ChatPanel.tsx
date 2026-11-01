@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ModelPicker } from "@/components/chat/ModelPicker";
 import { getDesktopApi } from "@/lib/desktop";
 import type { ChatMessage, Conversation, ConversationSummary } from "@/types/desktop";
 
@@ -77,13 +78,6 @@ export function ChatPanel({ projectName, getContext, onApply }: ChatPanelProps) 
     }
   }
 
-  async function configure() {
-    await run(async () => {
-      await getDesktopApi()?.configureAi();
-      await refresh();
-    });
-  }
-
   async function send() {
     const api = getDesktopApi();
     const text = input.trim();
@@ -127,14 +121,11 @@ export function ChatPanel({ projectName, getContext, onApply }: ChatPanelProps) 
 
   if (!isConfigured) {
     return (
-      <div className="p-3 text-xs text-muted">
-        <p className="mb-3">
-          Wähle dafür <code>llama-server</code> und ein GGUF-Modell auf diesem Rechner. Alles bleibt lokal.
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ModelPicker onChange={refresh} />
+        <p className="p-3 text-xs text-muted">
+          Wähle ein Modell und <code>llama-server</code> aus. Alles bleibt auf diesem Rechner.
         </p>
-        <button type="button" onClick={configure} className="rounded bg-accent px-3 py-1.5 font-medium text-canvas">
-          Lokale KI einrichten
-        </button>
-        {error && <p role="alert" className="mt-2 text-red-400">{error}</p>}
       </div>
     );
   }
@@ -149,6 +140,7 @@ export function ChatPanel({ projectName, getContext, onApply }: ChatPanelProps) 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col text-xs">
+      <ModelPicker onChange={refresh} />
       {storageBanner && (
         <p
           role="alert"

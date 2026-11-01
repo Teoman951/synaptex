@@ -22,7 +22,12 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   cancelCompile: () => ipcRenderer.invoke("project:cancel-compile"),
   saveThumbnail: (dataUrl) => ipcRenderer.invoke("project:save-thumbnail", dataUrl),
   aiConfigured: () => ipcRenderer.invoke("ai:configured"),
-  configureAi: () => ipcRenderer.invoke("ai:configure"),
+  listModels: () => ipcRenderer.invoke("ai:models"),
+  pickServer: () => ipcRenderer.invoke("ai:pick-server"),
+  addModel: () => ipcRenderer.invoke("ai:add-model"),
+  selectModel: (id) => ipcRenderer.invoke("ai:select-model", id),
+  removeModel: (id) => ipcRenderer.invoke("ai:remove-model", id),
+  trashModel: (id) => ipcRenderer.invoke("ai:trash-model", id),
   cancelAi: () => ipcRenderer.invoke("ai:cancel"),
   onAiToken: (listener) => {
     const handler = (_event, token) => listener(token);
