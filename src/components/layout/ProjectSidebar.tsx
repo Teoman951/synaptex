@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { ProjectSearch } from "@/components/layout/ProjectSearch";
 import { FileList } from "@/components/layout/FileList";
 import { HistoryPanel } from "@/components/layout/HistoryPanel";
+import { NewItemBar } from "@/components/layout/NewItemBar";
 import { getDesktopApi } from "@/lib/desktop";
 import type { OutlineItem } from "@/types/desktop";
 
@@ -17,6 +18,11 @@ interface ProjectSidebarProps {
   canSave: boolean;
   onSaveAs: () => void;
   onSelectFile: (file: string) => void;
+  images: string[];
+  onInsertImage: (image: string) => void;
+  onCreateFile: (name: string) => void;
+  onCreateFolder: (name: string) => void;
+  onAddImages: () => void;
   onRestoreCheckpoint: (id: string) => void;
   onSelectOutline: (file: string, line: number) => void;
 }
@@ -32,6 +38,11 @@ export function ProjectSidebar({
   canSave,
   onSaveAs,
   onSelectFile,
+  images,
+  onInsertImage,
+  onCreateFile,
+  onCreateFolder,
+  onAddImages,
   onRestoreCheckpoint,
   onSelectOutline,
 }: ProjectSidebarProps) {
@@ -106,11 +117,27 @@ export function ProjectSidebar({
           </svg>
         </button>
       </div>
+      {!canSave && (
+        <NewItemBar onCreateFile={onCreateFile} onCreateFolder={onCreateFolder} onAddImages={onAddImages} />
+      )}
       <div className="min-h-0 flex-1 overflow-auto">
         {isSearching ? (
           <ProjectSearch onSelect={onSelectOutline} />
         ) : (
-          <FileList files={files} activeFile={activeFile} mainFile={mainFile} onSelect={onSelectFile} />
+          <>
+            <FileList files={files} activeFile={activeFile} mainFile={mainFile} onSelect={onSelectFile} />
+            {images.map((image) => (
+              <button
+                key={image}
+                type="button"
+                title={t("insertImage")}
+                onClick={() => onInsertImage(image)}
+                className="block w-full truncate px-3 py-1 text-left text-xs text-muted hover:text-accent"
+              >
+                🖼 {image}
+              </button>
+            ))}
+          </>
         )}
       </div>
 

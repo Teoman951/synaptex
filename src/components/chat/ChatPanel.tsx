@@ -33,11 +33,23 @@ function formatBytes(bytes: number) {
   return `${Math.ceil(bytes / 1024)} KB`;
 }
 
-function MessageBody({ text, onApply }: { text: string; onApply: (code: string) => void }) {
+const NEW_FILE_LINE = /NEW FILE:\s*(\S+)\s*$/;
+
+function MessageBody({
+  text,
+  onApply,
+  onCreateFile,
+}: {
+  text: string;
+  onApply: (code: string) => void;
+  onCreateFile: (file: string, content: string) => void;
+}) {
   // Odd parts are the contents of fenced code blocks.
-  return text.split("```").map((part, index) => {
+  const parts = text.split("```");
+  return parts.map((part, index) => {
     if (index % 2 === 0) return <p key={index} className="whitespace-pre-wrap">{part.trim()}</p>;
     const code = part.replace(/^[a-z]*\n/i, "").trimEnd();
+    const newFile = parts[index - 1].trim().match(NEW_FILE_LINE)?.[1];
     return (
       <div key={index} className="my-2 rounded border border-line">
         <pre className="max-h-48 overflow-auto p-2 font-mono text-[11px]">{code}</pre>
@@ -46,8 +58,19 @@ function MessageBody({ text, onApply }: { text: string; onApply: (code: string) 
           onClick={() => onApply(code)}
           className="w-full border-t border-line p-1 text-xs text-accent hover:bg-canvas"
         >
-          Änderung ansehen
+          {t("viewChange")}
         </button>
+        {newFile && (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(t("createFileConfirm", { file: newFile }))) onCreateFile(newFile, code);
+            }}
+            className="w-full truncate border-t border-line p-1 text-xs text-accent hover:bg-canvas"
+          >
+            {t("createFile", { file: newFile })}
+          </button>
+        )}
       </div>
     );
   });
@@ -100,10 +123,11 @@ interface ChatPanelProps {
   projectName: string | null;
   getContext: () => EditorContext;
   getTarget: () => EditTarget | null;
+  onCreateFile: (file: string, content: string) => void;
   onApply: (target: EditTarget, code: string) => boolean;
 }
 
-export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatPanelProps) {
+export function ChatPanel({ projectName, getContext, getTarget, onApply, onCreateFile }: ChatPanelProps) {
   const [isConfigured, setIsConfigured] = useState(false);
   const [cloudModel, setCloudModel] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -270,7 +294,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
             )}
             {current.messages.map((message, index) => (
               <div key={index} className={`mb-3 ${message.role === "user" ? "text-accent" : ""}`}>
-                <MessageBody text={message.content} onApply={propose} />
+                <MessageBody text={message.content} onApply={propose} onCreateFile={onCreateFile} />
               </div>
             ))}
             {pendingReply === "" && (
@@ -286,7 +310,7 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
                 ))}
               </p>
             )}
-            {pendingReply && <MessageBody text={pendingReply} onApply={propose} />}
+            {pendingReply && <MessageBody text={pendingReply} onApply={propose} onCreateFile={onCreateFile} />}
           </div>
         </>
       )}

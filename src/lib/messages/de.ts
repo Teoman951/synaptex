@@ -174,4 +174,11 @@ export const de: Record<string, string> = {
   chatgptEnvKey: "Variable",
   chatgptEnvValue: "Wert",
   closeTab: "{file} schließen",
+  newFile: "+ Datei",
+  newFolder: "+ Ordner",
+  addImage: "+ Bild",
+  itemName: "Name",
+  insertImage: "Klick fügt das Bild am Cursor ein",
+  createFile: "Datei anlegen: {file}",
+  createFileConfirm: "Datei {file} anlegen?",
 };

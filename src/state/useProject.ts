@@ -29,6 +29,7 @@ export function useProject() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeFile, setActiveFile] = useState("main.tex");
   const [openFiles, setOpenFiles] = useState(["main.tex"]);
+  const [images, setImages] = useState<string[]>([]);
   const [content, setContent] = useState(INITIAL_DOCUMENT);
   const [savedContent, setSavedContent] = useState(INITIAL_DOCUMENT);
   const [engine, setEngine] = useState<Engine>("pdflatex");
@@ -57,6 +58,19 @@ export function useProject() {
       cancelled = true;
     };
   }, [mainFile, savedContent]);
+
+  useEffect(() => {
+    if (!mainFile) return;
+    let cancelled = false;
+    getDesktopApi()
+      ?.projectFiles()
+      .then((listed) => {
+        if (!cancelled) setImages(listed.images);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mainFile]);
 
   function applyProject(opened: OpenedProject) {
     setProject(opened);
@@ -125,6 +139,35 @@ export function useProject() {
   }
 
   // Closing the active tab moves to its neighbour; the last tab stays open.
+  async function refreshFiles() {
+    const listed = await getDesktopApi()?.projectFiles();
+    if (!listed) return;
+    setImages(listed.images);
+    setProject((current) => (current ? { ...current, files: listed.files } : current));
+  }
+
+  function createFile(file: string, content = "") {
+    return attempt(async () => {
+      const created = await getDesktopApi()?.createFile(file, content);
+      await refreshFiles();
+      if (created) await selectFile(created);
+    });
+  }
+
+  function createFolder(folder: string) {
+    return attempt(async () => {
+      await getDesktopApi()?.createFolder(folder);
+      await refreshFiles();
+    });
+  }
+
+  function addImages() {
+    return attempt(async () => {
+      await getDesktopApi()?.addImages();
+      await refreshFiles();
+    });
+  }
+
   async function closeFile(file: string) {
     if (openFiles.length === 1) return;
     const index = openFiles.indexOf(file);
@@ -202,6 +245,11 @@ export function useProject() {
     activeFile,
     openFiles,
     closeFile,
+    images,
+    refreshFiles,
+    createFile,
+    createFolder,
+    addImages,
     content,
     setContent,
     engine,

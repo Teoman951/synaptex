@@ -174,4 +174,11 @@ export const tr: Record<string, string> = {
   chatgptEnvKey: "Değişken",
   chatgptEnvValue: "Değer",
   closeTab: "{file} kapat",
+  newFile: "+ Dosya",
+  newFolder: "+ Klasör",
+  addImage: "+ Görsel",
+  itemName: "Ad",
+  insertImage: "Tıklama görseli imlece ekler",
+  createFile: "Dosya oluştur: {file}",
+  createFileConfirm: "{file} dosyası oluşturulsun mu?",
 };

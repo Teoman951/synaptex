@@ -101,6 +101,31 @@ function resolveInProject(relativePath) {
   return resolved;
 }
 
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".pdf"]);
+
+// For paths that must not exist yet. Stays inside the project and skips hidden parts.
+function resolveNewPath(relativePath) {
+  if (!projectRoot || typeof relativePath !== "string") throw new Error("No project open");
+  const resolved = path.resolve(projectRoot, relativePath);
+  const parts = path.relative(projectRoot, resolved).split(path.sep);
+  const inside = resolved.startsWith(projectRoot + path.sep);
+  if (!inside || parts.some((part) => part.startsWith("."))) throw new Error("Invalid path");
+  if (existsSync(resolved)) throw new Error("Already exists");
+  return resolved;
+}
+
+async function listImages(root, relative = "") {
+  const images = [];
+  const entries = await readdir(path.join(root, relative), { withFileTypes: true });
+  for (const entry of entries) {
+    if (images.length >= FILE_LIMIT || entry.name.startsWith(".") || IGNORED_FOLDERS.has(entry.name)) continue;
+    const entryPath = path.posix.join(relative, entry.name);
+    if (entry.isDirectory()) images.push(...(await listImages(root, entryPath)));
+    else if (IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) images.push(entryPath);
+  }
+  return images;
+}
+
 async function listTextFiles(root, relative = "") {
   const files = [];
   const entries = await readdir(path.join(root, relative), { withFileTypes: true });
@@ -346,6 +371,43 @@ function registerProjectHandlers() {
     projectRoot ? scanProject(projectRoot, await listTextFiles(projectRoot)) : [],
   );
 
+  ipcMain.handle("project:files", async () =>
+    projectRoot ? { files: await listTextFiles(projectRoot), images: await listImages(projectRoot) } : { files: [], images: [] },
+  );
+
+  ipcMain.handle("project:create-file", async (_event, file, content) => {
+    const target = resolveNewPath(file);
+    if (!TEXT_EXTENSIONS.has(path.extname(target).toLowerCase())) throw new Error("Unsupported file");
+    await mkdir(path.dirname(target), { recursive: true });
+    // wx refuses to replace a file that appeared in the meantime.
+    await writeFile(target, String(content ?? ""), { encoding: "utf8", flag: "wx" });
+    return path.relative(projectRoot, target).replaceAll(path.sep, "/");
+  });
+
+  ipcMain.handle("project:create-folder", async (_event, folder) => {
+    await mkdir(resolveNewPath(folder), { recursive: true });
+  });
+
+  ipcMain.handle("project:add-images", async (event) => {
+    if (!projectRoot) return [];
+    const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
+      properties: ["openFile", "multiSelections"],
+      filters: [{ name: text("imageFilter"), extensions: ["png", "jpg", "jpeg", "pdf"] }],
+    });
+    if (canceled) return [];
+    const folder = path.join(projectRoot, "bilder");
+    await mkdir(folder, { recursive: true });
+    const added = [];
+    for (const source of filePaths) {
+      const { name, ext } = path.parse(source);
+      let target = path.join(folder, `${name}${ext}`);
+      for (let copy = 2; existsSync(target); copy++) target = path.join(folder, `${name}-${copy}${ext}`);
+      await copyFile(source, target);
+      added.push(`bilder/${path.basename(target)}`);
+    }
+    return added;
+  });
+
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));
 
   ipcMain.handle("project:write", (_event, file, content) =>
@@ -384,7 +446,8 @@ function systemPrompt() {
   return (
     "You help with writing LaTeX documents. You receive the document text with every question " +
     `and can read it. Answer briefly in ${text("languageName")}. ` +
-    "Always put LaTeX code that belongs in the document in a code block with three backticks."
+    "Always put LaTeX code that belongs in the document in a code block with three backticks. " +
+    "To suggest a new file, write the line NEW FILE: relative/path.tex directly before its code block."
   );
 }
 const MAX_CONTEXT_CHARS = 6000;

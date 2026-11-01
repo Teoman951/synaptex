@@ -71,5 +71,9 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   mcpProposals: () => ipcRenderer.invoke("mcp:proposals"),
   mcpApprove: (id) => ipcRenderer.invoke("mcp:approve", id),
   mcpReject: (id) => ipcRenderer.invoke("mcp:reject", id),
+  projectFiles: () => ipcRenderer.invoke("project:files"),
+  createFile: (file, content) => ipcRenderer.invoke("project:create-file", file, content),
+  createFolder: (folder) => ipcRenderer.invoke("project:create-folder", folder),
+  addImages: () => ipcRenderer.invoke("project:add-images"),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

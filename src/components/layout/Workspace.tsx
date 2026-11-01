@@ -164,6 +164,13 @@ export function Workspace() {
     return true;
   }
 
+  function insertImage(image: string) {
+    const view = editorRef.current;
+    if (!view) return;
+    view.dispatch(view.state.replaceSelection(`\\includegraphics[width=0.8\\textwidth]{${image}}`));
+    view.focus();
+  }
+
   function moveToLine(view: EditorView, line: number) {
     const { from } = view.state.doc.line(Math.min(line, view.state.doc.lines));
     view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
@@ -227,6 +234,7 @@ export function Workspace() {
               projectName={project.project?.name ?? null}
               getContext={getEditorContext}
               getTarget={getEditTarget}
+              onCreateFile={project.createFile}
               onApply={applyToEditor}
             />
           }
@@ -239,6 +247,11 @@ export function Workspace() {
           canSave={!project.project}
           onSaveAs={saveAs}
           onSelectFile={project.selectFile}
+          images={project.images}
+          onInsertImage={insertImage}
+          onCreateFile={project.createFile}
+          onCreateFolder={project.createFolder}
+          onAddImages={project.addImages}
           onRestoreCheckpoint={project.restoreCheckpoint}
           onSelectOutline={jumpTo}
         />
