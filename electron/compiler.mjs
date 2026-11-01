@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, readdir, readFile, rm } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { text } from "./strings.mjs";
 
@@ -101,6 +101,19 @@ export async function locateSource({ projectDir, outputDir, mainFile, page, x, y
 
 // The compiler contract: project folder in, PDF and log out. Other backends
 // (Tectonic, a remote server) implement the same function.
+// A separate MiKTeX user config blocks absolute paths without touching the
+// user's own settings. It does not stop relative paths such as ../secret.
+async function restrictedMiktexEnv(folder) {
+  const configFolder = path.join(folder, "miktex", "config");
+  await mkdir(configFolder, { recursive: true });
+  await writeFile(
+    path.join(configFolder, "miktex.ini"),
+    "[Core]\nAllowUnsafeInputFiles=f\nAllowUnsafeOutputFiles=f\n",
+    "utf8",
+  );
+  return { MIKTEX_USERCONFIG: folder };
+}
+
 async function runTectonic({ projectDir, mainFile, outputDir, signal, tectonicPath, onProgress }) {
   onProgress(text("tectonic"));
   const args = [mainFile, "--outdir", outputDir, "--synctex", "--chatter", "minimal"];
@@ -129,6 +142,9 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   }
 
   const tool = findTool(engine);
+  const restriction = tool.toLowerCase().includes("miktex")
+    ? await restrictedMiktexEnv(`${outputDir}-miktex`)
+    : {};
   const baseName = path.basename(mainFile, ".tex");
   const args = [
     "-interaction=nonstopmode",
@@ -144,7 +160,7 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   let log = "";
   for (let pass = 1; pass <= MAX_ENGINE_RUNS; pass++) {
     onProgress(text("pass", { n: pass }));
-    result = await run(tool, args, { cwd: projectDir, signal, env: { ...process.env, max_print_line: "100000" } }, (output) => {
+    result = await run(tool, args, { cwd: projectDir, signal, env: { ...process.env, ...restriction, max_print_line: "100000" } }, (output) => {
       // Finished pages appear as [n] in the engine output.
       const page = [...output.matchAll(/\[(\d+)[\s\]{<]/g)].at(-1)?.[1];
       if (page) onProgress(text("passPage", { n: pass, page }));
