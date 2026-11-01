@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { ProjectSearch } from "@/components/layout/ProjectSearch";
 import { FileList } from "@/components/layout/FileList";
 import { HistoryPanel } from "@/components/layout/HistoryPanel";
+import { getDesktopApi } from "@/lib/desktop";
 import type { OutlineItem } from "@/types/desktop";
 
 interface ProjectSidebarProps {
@@ -52,6 +53,15 @@ export function ProjectSidebar({
           {name}
         </p>
         {/* Saved projects save themselves; only a new document needs a place first. */}
+        {!canSave && (
+          <button
+            type="button"
+            onClick={() => getDesktopApi()?.exportZip()}
+            className="mt-2 block text-xs text-muted hover:text-accent"
+          >
+            {t("exportZip")}
+          </button>
+        )}
         {canSave && (
           <button type="button" onClick={onSaveAs} className="mt-2 text-xs text-accent hover:underline">
             {t("chooseLocation")}

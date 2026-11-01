@@ -1,5 +1,5 @@
-import { unzipSync } from "fflate";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { unzipSync, zipSync } from "fflate";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const MAX_TOTAL_BYTES = 1024 * 1024 * 1024;
@@ -10,6 +10,20 @@ function sharedTopFolder(names) {
   const top = names[0]?.split("/")[0];
   const isShared = names.every((name) => name.includes("/") && name.split("/")[0] === top);
   return isShared ? `${top}/` : "";
+}
+
+async function collectFiles(root, relative, files) {
+  for (const entry of await readdir(path.join(root, relative), { withFileTypes: true })) {
+    if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+    const entryPath = path.posix.join(relative, entry.name);
+    if (entry.isDirectory()) await collectFiles(root, entryPath, files);
+    else if (entry.isFile()) files[entryPath] = await readFile(path.join(root, entryPath));
+  }
+  return files;
+}
+
+export async function exportZip(root, target) {
+  await writeFile(target, zipSync(await collectFiles(root, "", {})));
 }
 
 // Archives come from strangers: entries may not leave targetDir, and declared

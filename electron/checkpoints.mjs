@@ -3,6 +3,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const MAX_CHECKPOINTS = 20;
+const MAX_TOTAL_CHARS = 50 * 1024 * 1024;
 const ID_PATTERN = /^\d+$/;
 
 function checkpointFile(folder, id) {
@@ -24,7 +25,14 @@ export async function loadCheckpoint(folder, id) {
 // Stores all text files. Skips the write when nothing changed since the latest one.
 export async function createCheckpoint(folder, root, relativeFiles, label) {
   const files = {};
-  for (const file of relativeFiles) files[file] = await readFile(path.join(root, file), "utf8");
+  let totalChars = 0;
+  for (const file of relativeFiles) {
+    // A locked or vanished file must not block opening the project.
+    const content = await readFile(path.join(root, file), "utf8").catch(() => null);
+    if (content === null || totalChars + content.length > MAX_TOTAL_CHARS) continue;
+    totalChars += content.length;
+    files[file] = content;
+  }
   const hash = createHash("sha256").update(JSON.stringify(files)).digest("hex");
 
   const ids = await checkpointIds(folder);

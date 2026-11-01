@@ -177,6 +177,7 @@ export interface SynaptexDesktopApi {
   mcpConnect: () => Promise<void>;
   mcpDisconnect: () => Promise<void>;
   mcpShare: (id: string, shared: boolean) => Promise<void>;
+  exportZip: () => Promise<void>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

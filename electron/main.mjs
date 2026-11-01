@@ -20,7 +20,7 @@ import { detectModels, findGguf, withDetails } from "./models.mjs";
 import { buildOutline } from "./outline.mjs";
 import { setLanguage, text } from "./strings.mjs";
 import { TEMPLATES } from "./templates.mjs";
-import { extractZip } from "./zipImport.mjs";
+import { exportZip, extractZip } from "./zipImport.mjs";
 
 const electronDir = path.dirname(fileURLToPath(import.meta.url));
 const exportDir = path.join(electronDir, "..", "out");
@@ -322,6 +322,15 @@ function registerProjectHandlers() {
       }
     }
     return matches;
+  });
+
+  ipcMain.handle("project:export-zip", async (event) => {
+    if (!projectRoot) return;
+    const { canceled, filePath } = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), {
+      defaultPath: `${path.basename(projectRoot)}.zip`,
+      filters: [{ name: text("zipFilter"), extensions: ["zip"] }],
+    });
+    if (!canceled && filePath) await exportZip(projectRoot, filePath);
   });
 
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));

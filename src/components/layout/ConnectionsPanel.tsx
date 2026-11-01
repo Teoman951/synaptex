@@ -34,6 +34,13 @@ export function ConnectionsPanel() {
 
   if (!state) return null;
   const api = getDesktopApi();
+  const lastAccess = state.log[0];
+  const statusText = !state.connected
+    ? t("mcpOff")
+    : lastAccess
+      ? t("mcpActive", { time: timeFormat.format(lastAccess.at) })
+      : t("mcpWaiting");
+  const statusColor = !state.connected ? "bg-muted" : lastAccess ? "bg-green-500" : "bg-amber-400";
 
   return (
     <div className="max-w-2xl p-4 text-xs">
@@ -45,6 +52,10 @@ export function ConnectionsPanel() {
       >
         {t(state.connected ? "mcpDisconnect" : "mcpConnect")}
       </button>
+      <p className="mt-3 flex items-center gap-2">
+        <span aria-hidden className={`size-2 rounded-full ${statusColor}`} />
+        {statusText}
+      </p>
       {state.connected && <p className="mt-2 text-muted">{t("mcpRestart")}</p>}
       {failed && <p role="alert" className="mt-2 text-red-400">{t("mcpFailed")}</p>}
 

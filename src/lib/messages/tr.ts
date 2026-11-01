@@ -135,4 +135,8 @@ export const tr: Record<string, string> = {
   previewSize: "Önizleme boyutu",
   listView: "Liste",
   gridView: "Izgara",
+  exportZip: "ZIP olarak dışa aktar",
+  mcpOff: "Bağlı değil",
+  mcpWaiting: "Kuruldu, Claude henüz erişmedi",
+  mcpActive: "Bağlı, son erişim: {time}",
 };

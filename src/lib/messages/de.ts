@@ -135,4 +135,8 @@ export const de: Record<string, string> = {
   previewSize: "Vorschaugröße",
   listView: "Liste",
   gridView: "Raster",
+  exportZip: "Als ZIP exportieren",
+  mcpOff: "Nicht verbunden",
+  mcpWaiting: "Eingerichtet, Claude hat noch nicht zugegriffen",
+  mcpActive: "Verbunden, letzter Zugriff: {time}",
 };

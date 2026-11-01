@@ -135,4 +135,8 @@ export const fr: Record<string, string> = {
   previewSize: "Taille de l'aperçu",
   listView: "Liste",
   gridView: "Grille",
+  exportZip: "Exporter en ZIP",
+  mcpOff: "Non connecté",
+  mcpWaiting: "Configuré, Claude n'a encore rien consulté",
+  mcpActive: "Connecté, dernier accès : {time}",
 };
