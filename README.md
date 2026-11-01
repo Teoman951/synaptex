@@ -6,6 +6,10 @@
 
 Schreibe und kompiliere LaTeX ohne Cloud. Deine Dokumente und KI-Unterhaltungen bleiben auf deinem Computer.
 
+[![Für Windows herunterladen](https://img.shields.io/badge/F%C3%BCr_Windows_herunterladen-2563eb?style=for-the-badge)](https://github.com/Teoman951/synaptex/releases/latest)
+
+<sub>Windows zeigt beim ersten Start eine Warnung, weil der Installer noch nicht signiert ist: „Weitere Informationen“, dann „Trotzdem ausführen“.</sub>
+
 [![Lizenz: AGPL v3](https://img.shields.io/badge/Lizenz-AGPL_v3-22c55e.svg)](LICENSE)
 [![Status: frühe Entwicklung](https://img.shields.io/badge/Status-fr%C3%BChe_Entwicklung-f59e0b.svg)](#status)
 ![Plattform: Windows getestet](https://img.shields.io/badge/getestet_auf-Windows-3b82f6.svg)
