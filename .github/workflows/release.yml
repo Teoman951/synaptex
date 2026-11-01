@@ -22,6 +22,10 @@ jobs:
       - run: npm run lint
       - run: node scripts/fetch-tectonic.mjs
       - run: npm run build
+      # Created up front: parallel uploads would otherwise each create a release.
+      - run: gh release create "${{ github.ref_name }}" --verify-tag --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
