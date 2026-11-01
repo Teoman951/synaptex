@@ -9,8 +9,21 @@ permissions:
   contents: write
 
 jobs:
-  windows:
-    runs-on: windows-latest
+  # Created up front: parallel uploads would otherwise each create a release.
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" --verify-tag --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,10 +35,6 @@ jobs:
       - run: npm run lint
       - run: node scripts/fetch-tectonic.mjs
       - run: npm run build
-      # Created up front: parallel uploads would otherwise each create a release.
-      - run: gh release create "${{ github.ref_name }}" --verify-tag --generate-notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: npx electron-builder --win --publish always
+      - run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -38,7 +38,7 @@ Small local models make mistakes. Check suggestions before applying them.
 
 ## Status
 
-SynapTeX is in early development and tested on Windows. The interface is in German. Linux is offered but untested. macOS is not available yet.
+SynapTeX is in early development and tested on Windows. The interface is available in five languages. Linux is offered but untested. macOS is not available yet.
 
 **Network:** On start the app checks GitHub for updates and asks before downloading. Packages and models are downloaded only when needed.
 

@@ -38,7 +38,7 @@ Küçük yerel modeller hata yapar. Önerileri uygulamadan önce kontrol et.
 
 ## Durum
 
-SynapTeX erken geliştirme aşamasındadır ve Windows'ta test edilmiştir. Arayüz Almancadır. Linux sunulmaktadır ancak test edilmemiştir. macOS henüz mevcut değildir.
+SynapTeX erken geliştirme aşamasındadır ve Windows'ta test edilmiştir. Arayüz beş dilde sunulur. Linux sunulmaktadır ancak test edilmemiştir. macOS henüz mevcut değildir.
 
 **Ağ:** Uygulama başlangıçta GitHub'da güncelleme olup olmadığını denetler ve indirmeden önce sorar. Paketler ve modeller yalnızca gerektiğinde indirilir.
 
