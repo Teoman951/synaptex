@@ -96,6 +96,12 @@ export interface SearchMatch {
   text: string;
 }
 
+export interface McpState {
+  connected: boolean;
+  projects: { id: string; name: string; shared: boolean }[];
+  log: { at: number; tool: string; project: string | null; file: string | null }[];
+}
+
 export interface CompileError {
   message: string;
   // Null when the error lies outside the project or has no location.
@@ -167,6 +173,10 @@ export interface SynaptexDesktopApi {
   createFromTemplate: (id: string) => Promise<OpenedProject | null>;
   searchProject: (query: string) => Promise<SearchMatch[]>;
   setLanguage: (language: string) => Promise<void>;
+  mcpState: () => Promise<McpState>;
+  mcpConnect: () => Promise<void>;
+  mcpDisconnect: () => Promise<void>;
+  mcpShare: (id: string, shared: boolean) => Promise<void>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

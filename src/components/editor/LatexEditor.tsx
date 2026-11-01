@@ -2,12 +2,27 @@
 
 import { t } from "@/lib/i18n";
 import { autocompletion } from "@codemirror/autocomplete";
-import { StreamLanguage } from "@codemirror/language";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
+import { Prec } from "@codemirror/state";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
+import { tags } from "@lezer/highlight";
 import CodeMirror, { type EditorView } from "@uiw/react-codemirror";
 import { latexCompletions } from "@/components/editor/latexCompletions";
 
-const extensions = [StreamLanguage.define(stex), autocompletion({ override: [latexCompletions] })];
+const latexColors = HighlightStyle.define([
+  { tag: tags.tagName, color: "#e5c07b" },
+  { tag: [tags.keyword, tags.atom], color: "#98c379" },
+  { tag: tags.bracket, color: "#c678dd" },
+  { tag: tags.number, color: "#d19a66" },
+  { tag: tags.string, color: "#56b6c2" },
+  { tag: tags.comment, color: "#7f848e", fontStyle: "italic" },
+]);
+
+const extensions = [
+  StreamLanguage.define(stex),
+  Prec.highest(syntaxHighlighting(latexColors)),
+  autocompletion({ override: [latexCompletions] }),
+];
 
 interface LatexEditorProps {
   value: string;

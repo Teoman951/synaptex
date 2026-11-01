@@ -123,4 +123,13 @@ export const de: Record<string, string> = {
   "hint.paragraph": "Einem Befehl fehlt die schließende Klammer, bevor ein neuer Absatz beginnt.",
   "hint.undefinedEnv": "Diese Umgebung ist unbekannt. Prüfe die Schreibweise oder ob ein \\usepackage fehlt.",
   "hint.script": "Zwei _ oder ^ folgen direkt aufeinander. Fasse sie mit {} zusammen.",
+  aiConnections: "KI-Verbindungen",
+  mcpIntro: "Verbinde SynapTeX mit Claude Desktop. Claude kann dann freigegebene Projekte lesen, aber nicht ändern.",
+  mcpConnect: "Mit Claude verbinden",
+  mcpDisconnect: "Verbindung trennen",
+  mcpRestart: "Starte Claude Desktop neu, damit die Änderung gilt.",
+  mcpFailed: "Die Verbindung konnte nicht eingerichtet werden.",
+  mcpShared: "Freigegebene Projekte",
+  mcpLog: "Zugriffe",
+  mcpNoLog: "Noch keine Zugriffe.",
 };

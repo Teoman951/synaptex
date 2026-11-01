@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ModelPicker } from "@/components/chat/ModelPicker";
+import { ConnectionsPanel } from "@/components/layout/ConnectionsPanel";
 import { Logo } from "@/components/layout/Logo";
 import { getDesktopApi } from "@/lib/desktop";
 import { changeLanguage, language, LANGUAGES, type Language, t } from "@/lib/i18n";
@@ -30,7 +31,7 @@ export function ProjectHome({
 }: ProjectHomeProps) {
   const [projects, setProjects] = useState<RecentProject[]>([]);
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<"projects" | "models" | "templates">("projects");
+  const [view, setView] = useState<"projects" | "models" | "connections" | "templates">("projects");
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export function ProjectHome({
             [
               { id: "projects", label: t("yourProjects") },
               { id: "models", label: t("aiModels") },
+              { id: "connections", label: t("aiConnections") },
             ] as const
           ).map(({ id, label }) => (
             <button
@@ -112,6 +114,13 @@ export function ProjectHome({
               </div>
             </section>
           ))}
+        </main>
+      )}
+
+      {view === "connections" && (
+        <main className="min-w-0 flex-1 overflow-auto bg-surface/40">
+          <h1 className="border-b border-line p-4 text-base font-semibold">{t("aiConnections")}</h1>
+          <ConnectionsPanel />
         </main>
       )}
 

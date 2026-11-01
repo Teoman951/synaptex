@@ -123,4 +123,13 @@ export const tr: Record<string, string> = {
   "hint.paragraph": "Yeni paragraf başlamadan önce bir komutun kapanış parantezi eksik.",
   "hint.undefinedEnv": "Bu ortam bilinmiyor. Yazımı veya eksik bir \\usepackage olup olmadığını kontrol et.",
   "hint.script": "İki _ veya ^ art arda geliyor. {} ile grupla.",
+  aiConnections: "Yapay zekâ bağlantıları",
+  mcpIntro: "SynapTeX'i Claude Desktop'a bağla. Claude paylaşılan projeleri okuyabilir ama değiştiremez.",
+  mcpConnect: "Claude'a bağlan",
+  mcpDisconnect: "Bağlantıyı kes",
+  mcpRestart: "Değişikliğin geçerli olması için Claude Desktop'ı yeniden başlat.",
+  mcpFailed: "Bağlantı kurulamadı.",
+  mcpShared: "Paylaşılan projeler",
+  mcpLog: "Erişim kaydı",
+  mcpNoLog: "Henüz erişim yok.",
 };

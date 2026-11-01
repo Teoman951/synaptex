@@ -462,6 +462,78 @@ async function compressConversation(folder, conversation, settings) {
   });
 }
 
+function claudeConfigFile() {
+  return path.join(app.getPath("appData"), "Claude", "claude_desktop_config.json");
+}
+
+async function readClaudeConfig() {
+  const raw = await readFile(claudeConfigFile(), "utf8").catch(() => "{}");
+  return JSON.parse(raw);
+}
+
+// Keeps the user's other settings and a backup of the previous file.
+async function writeClaudeConfig(config) {
+  const file = claudeConfigFile();
+  await mkdir(path.dirname(file), { recursive: true });
+  if (existsSync(file)) await copyFile(file, `${file}.synaptex-backup`);
+  await writeFile(file, JSON.stringify(config, null, 2), "utf8");
+}
+
+function sharedProjectsFile() {
+  return path.join(app.getPath("userData"), "mcp-projects.json");
+}
+
+async function readSharedProjects() {
+  return JSON.parse(await readFile(sharedProjectsFile(), "utf8").catch(() => "[]"));
+}
+
+function registerMcpHandlers() {
+  ipcMain.handle("mcp:state", async () => {
+    const config = await readClaudeConfig().catch(() => ({}));
+    const shared = new Set((await readSharedProjects()).map((project) => project.path));
+    const raw = await readFile(path.join(app.getPath("userData"), "mcp-log.jsonl"), "utf8").catch(() => "");
+    return {
+      connected: Boolean(config.mcpServers?.synaptex),
+      projects: (await readRecentProjects()).map(({ id, name, path: root }) => ({
+        id,
+        name,
+        shared: shared.has(root),
+      })),
+      log: raw.trim().split("\n").filter(Boolean).slice(-20).reverse().map((line) => JSON.parse(line)),
+    };
+  });
+
+  ipcMain.handle("mcp:connect", async () => {
+    const config = await readClaudeConfig();
+    await writeClaudeConfig({
+      ...config,
+      mcpServers: {
+        ...config.mcpServers,
+        synaptex: {
+          command: process.execPath,
+          args: [path.join(electronDir, "mcp-server.mjs"), app.getPath("userData")],
+          env: { ELECTRON_RUN_AS_NODE: "1" },
+        },
+      },
+    });
+  });
+
+  ipcMain.handle("mcp:disconnect", async () => {
+    const config = await readClaudeConfig();
+    const servers = { ...config.mcpServers };
+    delete servers.synaptex;
+    await writeClaudeConfig({ ...config, mcpServers: servers });
+  });
+
+  ipcMain.handle("mcp:share", async (_event, id, shared) => {
+    const project = (await readRecentProjects()).find((item) => item.id === id);
+    if (!project) throw new Error("Unknown project");
+    const others = (await readSharedProjects()).filter((item) => item.path !== project.path);
+    const next = shared ? [...others, { name: project.name, path: project.path }] : others;
+    await writeFile(sharedProjectsFile(), JSON.stringify(next), "utf8");
+  });
+}
+
 function registerChatHandlers() {
   ipcMain.handle("app:set-language", (_event, language) => setLanguage(language));
 
@@ -670,6 +742,7 @@ app.whenReady().then(() => {
   if (!isDev) serveStaticExport();
   registerProjectHandlers();
   registerChatHandlers();
+  registerMcpHandlers();
   createWindow();
   if (app.isPackaged) checkForUpdates();
 

@@ -123,4 +123,13 @@ export const es: Record<string, string> = {
   "hint.paragraph": "A un comando le falta la llave de cierre antes de un nuevo párrafo.",
   "hint.undefinedEnv": "Este entorno es desconocido. Comprueba la escritura o si falta un \\usepackage.",
   "hint.script": "Dos _ o ^ van seguidos. Agrúpalos con {}.",
+  aiConnections: "Conexiones de IA",
+  mcpIntro: "Conecta SynapTeX con Claude Desktop. Claude podrá leer los proyectos compartidos, pero no cambiarlos.",
+  mcpConnect: "Conectar con Claude",
+  mcpDisconnect: "Desconectar",
+  mcpRestart: "Reinicia Claude Desktop para aplicar el cambio.",
+  mcpFailed: "No se pudo configurar la conexión.",
+  mcpShared: "Proyectos compartidos",
+  mcpLog: "Registro de accesos",
+  mcpNoLog: "Aún no hay accesos.",
 };

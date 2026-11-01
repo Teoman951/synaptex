@@ -123,4 +123,13 @@ export const fr: Record<string, string> = {
   "hint.paragraph": "Il manque à une commande son accolade fermante avant un nouveau paragraphe.",
   "hint.undefinedEnv": "Cet environnement est inconnu. Vérifiez l'orthographe ou s'il manque un \\usepackage.",
   "hint.script": "Deux _ ou ^ se suivent directement. Regroupez-les avec {}.",
+  aiConnections: "Connexions IA",
+  mcpIntro: "Connectez SynapTeX à Claude Desktop. Claude pourra lire les projets partagés, sans les modifier.",
+  mcpConnect: "Connecter à Claude",
+  mcpDisconnect: "Déconnecter",
+  mcpRestart: "Redémarrez Claude Desktop pour appliquer le changement.",
+  mcpFailed: "La connexion n'a pas pu être configurée.",
+  mcpShared: "Projets partagés",
+  mcpLog: "Journal des accès",
+  mcpNoLog: "Aucun accès pour l'instant.",
 };

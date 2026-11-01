@@ -123,4 +123,13 @@ export const en: Record<string, string> = {
   "hint.paragraph": "A command is missing its closing brace before a new paragraph begins.",
   "hint.undefinedEnv": "This environment is unknown. Check the spelling or whether a \\usepackage is missing.",
   "hint.script": "Two _ or ^ follow each other directly. Group them with {}.",
+  aiConnections: "AI connections",
+  mcpIntro: "Connect SynapTeX to Claude Desktop. Claude can then read shared projects, but not change them.",
+  mcpConnect: "Connect to Claude",
+  mcpDisconnect: "Disconnect",
+  mcpRestart: "Restart Claude Desktop for this to take effect.",
+  mcpFailed: "The connection could not be set up.",
+  mcpShared: "Shared projects",
+  mcpLog: "Access log",
+  mcpNoLog: "No access yet.",
 };
