@@ -23,7 +23,7 @@ async function listFiles(folder, depth = 0) {
   return files.flat();
 }
 
-async function findGguf(folder, source) {
+export async function findGguf(folder, source) {
   const files = await listFiles(folder);
   return files
     .filter((file) => /\.gguf$/i.test(file) && !/mmproj/i.test(path.basename(file)))

@@ -8,7 +8,26 @@ import type { ChatMessage, Conversation, ConversationSummary } from "@/types/des
 
 const GIGABYTE = 1024 ** 3;
 const NOTICE_BYTES = GIGABYTE;
+// Mirrors electron/ai.mjs and promptFor in electron/main.mjs.
+const CONTEXT_TOKENS = 4096;
+const RECENT_MESSAGES = 8;
+const MAX_CONTEXT_CHARS = 6000;
+const SYSTEM_PROMPT_CHARS = 200;
+const CHARS_PER_TOKEN = 4;
 const CRITICAL_BYTES = 5 * GIGABYTE;
+
+// A rough estimate: the real token count depends on the model.
+function contextShare(conversation: Conversation, context: string) {
+  const messageChars = conversation.messages
+    .slice(-RECENT_MESSAGES)
+    .reduce((sum, message) => sum + message.content.length, 0);
+  const chars =
+    SYSTEM_PROMPT_CHARS +
+    messageChars +
+    (conversation.summary?.length ?? 0) +
+    Math.min(context.length, MAX_CONTEXT_CHARS);
+  return Math.min(1, chars / CHARS_PER_TOKEN / CONTEXT_TOKENS);
+}
 
 function formatBytes(bytes: number) {
   if (bytes >= GIGABYTE) return `${(bytes / GIGABYTE).toFixed(1)} GB`;
@@ -222,6 +241,15 @@ export function ChatPanel({ projectName, getContext, getSelection, onApply }: Ch
             <button type="button" onClick={() => setCurrent(null)} className="text-muted hover:text-accent">
               ← Alle
             </button>
+            <span title="Grobe Schätzung des belegten Kontextfensters" className="flex items-center gap-1 text-muted">
+              Kontext {Math.round(contextShare(current, getContext()) * 100)} %
+              <span className="h-1 w-16 overflow-hidden rounded bg-surface">
+                <span
+                  className="block h-full bg-accent"
+                  style={{ width: `${contextShare(current, getContext()) * 100}%` }}
+                />
+              </span>
+            </span>
             <button
               type="button"
               disabled={isBusy || current.messages.length < 6}

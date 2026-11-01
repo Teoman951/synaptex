@@ -25,6 +25,17 @@ export interface AiModel {
   bytes: number;
 }
 
+export interface CatalogModel {
+  id: string;
+  name: string;
+  bytes: number;
+}
+
+export interface DownloadProgress {
+  label: string;
+  percent: number;
+}
+
 export interface ModelOverview {
   hasServer: boolean;
   activeId: string | null;
@@ -98,6 +109,10 @@ export interface SynaptexDesktopApi {
   cancelCompile: () => Promise<void>;
   saveThumbnail: (dataUrl: string) => Promise<void>;
   aiConfigured: () => Promise<boolean>;
+  modelCatalog: () => Promise<CatalogModel[]>;
+  downloadModel: (id: string) => Promise<void>;
+  cancelDownload: () => Promise<void>;
+  onDownloadProgress: (listener: (progress: DownloadProgress) => void) => () => void;
   listModels: () => Promise<ModelOverview>;
   pickServer: () => Promise<void>;
   addModel: () => Promise<void>;

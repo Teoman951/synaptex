@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
-import type { AiModel, ModelOverview } from "@/types/desktop";
+import type { AiModel, CatalogModel, DownloadProgress, ModelOverview } from "@/types/desktop";
 
 function formatSize(bytes: number) {
   return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
@@ -15,22 +15,40 @@ interface ModelPickerProps {
 export function ModelPicker({ onChange }: ModelPickerProps) {
   const [overview, setOverview] = useState<ModelOverview | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [catalog, setCatalog] = useState<CatalogModel[]>([]);
+  const [progress, setProgress] = useState<DownloadProgress | null>(null);
+  const [downloadError, setDownloadError] = useState(false);
 
   const load = useCallback(async () => {
     const next = await getDesktopApi()?.listModels();
     if (next) setOverview(next);
+    setCatalog((await getDesktopApi()?.modelCatalog()) ?? []);
   }, []);
 
   useEffect(() => {
     // load only sets state after awaiting the main process.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
+    return getDesktopApi()?.onDownloadProgress(setProgress);
   }, [load]);
 
   async function update(action: () => Promise<unknown> | undefined) {
     await action();
     await load();
     onChange();
+  }
+
+  async function download(model: CatalogModel) {
+    const size = formatSize(model.bytes);
+    if (!window.confirm(`${model.name} (${size}) herunterladen?`)) return;
+    setDownloadError(false);
+    setProgress({ label: model.name, percent: 0 });
+    try {
+      await update(() => getDesktopApi()?.downloadModel(model.id));
+    } catch {
+      setDownloadError(true);
+    }
+    setProgress(null);
   }
 
   function trash(model: AiModel) {
@@ -96,6 +114,30 @@ export function ModelPicker({ onChange }: ModelPickerProps) {
               )}
             </div>
           ))}
+          {catalog.length > 0 && <p className="mt-2 text-muted">Herunterladen</p>}
+          {catalog.map((model) => (
+            <div key={model.id} className="flex items-center gap-2 py-1">
+              <span className="min-w-0 flex-1 truncate">{model.name}</span>
+              <span className="shrink-0 text-muted">{formatSize(model.bytes)}</span>
+              <button
+                type="button"
+                disabled={progress !== null}
+                onClick={() => download(model)}
+                className="shrink-0 text-accent hover:underline disabled:opacity-40"
+              >
+                Laden
+              </button>
+            </div>
+          ))}
+          {progress && (
+            <p className="py-1">
+              {progress.label}: {progress.percent} %{" "}
+              <button type="button" onClick={() => api?.cancelDownload()} className="text-accent hover:underline">
+                Abbrechen
+              </button>
+            </p>
+          )}
+          {downloadError && <p role="alert" className="py-1 text-red-400">Download fehlgeschlagen oder abgebrochen.</p>}
           <div className="mt-2 flex gap-3">
             <button type="button" onClick={() => update(() => api?.addModel())} className="text-accent hover:underline">
               + Modell hinzufügen

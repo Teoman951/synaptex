@@ -22,6 +22,14 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   cancelCompile: () => ipcRenderer.invoke("project:cancel-compile"),
   saveThumbnail: (dataUrl) => ipcRenderer.invoke("project:save-thumbnail", dataUrl),
   aiConfigured: () => ipcRenderer.invoke("ai:configured"),
+  modelCatalog: () => ipcRenderer.invoke("ai:catalog"),
+  downloadModel: (id) => ipcRenderer.invoke("ai:download", id),
+  cancelDownload: () => ipcRenderer.invoke("ai:cancel-download"),
+  onDownloadProgress: (listener) => {
+    const handler = (_event, progress) => listener(progress);
+    ipcRenderer.on("ai:download-progress", handler);
+    return () => ipcRenderer.off("ai:download-progress", handler);
+  },
   listModels: () => ipcRenderer.invoke("ai:models"),
   pickServer: () => ipcRenderer.invoke("ai:pick-server"),
   addModel: () => ipcRenderer.invoke("ai:add-model"),

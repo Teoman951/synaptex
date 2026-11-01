@@ -48,7 +48,7 @@ Kleine lokale Modelle machen Fehler. Prüfe Vorschläge, bevor du sie übernimms
 
 SynapTeX ist in früher Entwicklung und getestet unter Windows. Es gibt noch keinen Installer, keine Releases und keine Auto-Updates. macOS und Linux sind vorbereitet, aber ungetestet.
 
-Geplant sind unter anderem Modellverwaltung, Excel-Import, ein mitgelieferter Compiler und Zusammenarbeit.
+Geplant sind unter anderem ein mitgelieferter Compiler und Zusammenarbeit.
 
 ## Erste Schritte
 

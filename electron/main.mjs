@@ -14,7 +14,8 @@ import {
   loadConversation,
   saveConversation,
 } from "./conversations.mjs";
-import { detectModels, withDetails } from "./models.mjs";
+import { downloadFile, installLlamaServer, MODEL_CATALOG } from "./downloads.mjs";
+import { detectModels, findGguf, withDetails } from "./models.mjs";
 import { buildOutline } from "./outline.mjs";
 import { extractZip } from "./zipImport.mjs";
 
@@ -309,9 +310,14 @@ const MAX_CONTEXT_CHARS = 6000;
 const RECENT_MESSAGES = 8;
 const KEEP_AFTER_COMPRESS = 4;
 let aiAbort = null;
+let downloadAbort = null;
 
 function aiSettingsFile() {
   return path.join(app.getPath("userData"), "ai-settings.json");
+}
+
+function modelsFolder() {
+  return path.join(app.getPath("userData"), "models");
 }
 
 async function readModelSettings() {
@@ -331,7 +337,10 @@ async function readAiSettings() {
 }
 
 async function allModels(settings) {
-  const detected = await detectModels(app.getPath("home"), process.env.LOCALAPPDATA);
+  const detected = [
+    ...(await findGguf(modelsFolder(), "SynapTeX")),
+    ...(await detectModels(app.getPath("home"), process.env.LOCALAPPDATA)),
+  ];
   const known = new Set(detected.map((model) => model.path));
   const added = [...new Set([...settings.userModels, settings.modelPath])]
     .filter((file) => file && !known.has(file))
@@ -397,6 +406,39 @@ function registerChatHandlers() {
       activeId: models.find((model) => model.path === settings.modelPath)?.id ?? null,
       models: models.map(({ id, name, source, bytes }) => ({ id, name, source, bytes })),
     };
+  });
+
+  ipcMain.handle("ai:catalog", () =>
+    MODEL_CATALOG.filter(({ file }) => !existsSync(path.join(modelsFolder(), file))).map(
+      ({ id, name, bytes }) => ({ id, name, bytes }),
+    ),
+  );
+
+  ipcMain.handle("ai:cancel-download", () => downloadAbort?.abort());
+
+  ipcMain.handle("ai:download", async (event, id) => {
+    const model = MODEL_CATALOG.find((item) => item.id === id);
+    if (!model) throw new Error("Unknown model");
+    downloadAbort = new AbortController();
+    const { signal } = downloadAbort;
+    const report = (label) => (share) =>
+      event.sender.send("ai:download-progress", { label, percent: Math.floor(share * 100) });
+
+    let settings = await readModelSettings();
+    const needsServer = !settings.serverPath || !existsSync(settings.serverPath);
+    if (needsServer && process.platform === "win32") {
+      const serverPath = await installLlamaServer({
+        folder: path.join(app.getPath("userData"), "llama"),
+        signal,
+        onProgress: report("llama.cpp"),
+      });
+      settings = { ...settings, serverPath };
+      await writeModelSettings(settings);
+    }
+
+    const target = path.join(modelsFolder(), model.file);
+    await downloadFile({ ...model, target, signal, onProgress: report(model.name) });
+    await writeModelSettings({ ...settings, modelPath: target });
   });
 
   ipcMain.handle("ai:pick-server", async (event) => {
