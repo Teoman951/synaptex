@@ -23,6 +23,9 @@ const AUTO_COMPILE_KEY = "synaptex.autoCompile";
 const AUTO_SAVE_DELAY_MS = 1500;
 const FONT_SIZE_KEY = "synaptex.editorFontSize";
 const SPLIT_KEY = "synaptex.editorShare";
+const VIEW_MODE_KEY = "synaptex.viewMode";
+const VIEW_MODES = ["editor", "both", "pdf"] as const;
+type ViewMode = (typeof VIEW_MODES)[number];
 const MIN_FONT_SIZE = 10;
 const MAX_FONT_SIZE = 28;
 const MIN_SHARE = 0.2;
@@ -67,6 +70,15 @@ export function Workspace() {
   const [fontSize, setFontSize] = useState(() => readNumber(FONT_SIZE_KEY, 14));
   const [editorShare, setEditorShare] = useState(() => readNumber(SPLIT_KEY, 0.5));
   const [layoutVersion, setLayoutVersion] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "both";
+    try {
+      const stored = window.localStorage.getItem(VIEW_MODE_KEY);
+      return VIEW_MODES.find((mode) => mode === stored) ?? "both";
+    } catch {
+      return "both";
+    }
+  });
   const panesRef = useRef<HTMLDivElement>(null);
   const onRenderError = useCallback(() => setRenderFailed(true), []);
   const editorRef = useRef<EditorView | null>(null);
@@ -87,6 +99,16 @@ export function Workspace() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   });
+
+  function changeViewMode(next: ViewMode) {
+    setViewMode(next);
+    setLayoutVersion((version) => version + 1);
+    try {
+      window.localStorage.setItem(VIEW_MODE_KEY, next);
+    } catch {
+      // The view still applies for this session.
+    }
+  }
 
   function changeFontSize(next: number) {
     setFontSize(next);
@@ -258,6 +280,21 @@ export function Workspace() {
               onApply={applyToEditor}
             />
           }
+          viewPicker={
+            <div role="group" aria-label={t("viewMode")} className="mt-2 flex overflow-hidden rounded bg-surface text-xs">
+              {VIEW_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={mode === viewMode}
+                  onClick={() => changeViewMode(mode)}
+                  className={`flex-1 px-2 py-1 ${mode === viewMode ? "bg-foreground text-canvas" : "text-muted hover:text-accent"}`}
+                >
+                  {t(`view.${mode}`)}
+                </button>
+              ))}
+            </div>
+          }
           name={project.project?.name ?? t("newProject")}
           files={project.project?.files ?? [project.activeFile]}
           activeFile={project.activeFile}
@@ -278,10 +315,12 @@ export function Workspace() {
         />
         <div ref={panesRef} className="flex min-h-0 min-w-0 flex-1">
         <section
-          style={{ width: `${editorShare * 100}%` }}
+          style={viewMode === "both" ? { width: `${editorShare * 100}%` } : undefined}
           onDragOver={(event) => event.preventDefault()}
           onDropCapture={(event) => dropFiles(event, true)}
-          className="flex min-h-0 min-w-0 shrink-0 flex-col bg-black"
+          className={`min-h-0 min-w-0 flex-col bg-black ${
+            viewMode === "pdf" ? "hidden" : viewMode === "editor" ? "flex flex-1" : "flex shrink-0"
+          }`}
         >
           <PaneHeader
             title={
@@ -343,9 +382,9 @@ export function Workspace() {
           onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
           onPointerMove={dragSplitter}
           onPointerUp={finishSplitterDrag}
-          className="w-1 shrink-0 cursor-col-resize touch-none bg-line hover:bg-accent"
+          className={`w-1 shrink-0 cursor-col-resize touch-none bg-line hover:bg-accent ${viewMode === "both" ? "" : "hidden"}`}
         />
-        <section className="min-h-0 min-w-0 flex-1">
+        <section className={`min-h-0 min-w-0 flex-1 ${viewMode === "editor" ? "hidden" : ""}`}>
           <PdfPreview
             result={project.compileResult}
             layoutVersion={layoutVersion}

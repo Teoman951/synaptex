@@ -181,4 +181,8 @@ export const en: Record<string, string> = {
   insertImage: "Click inserts the image at the cursor",
   createFile: "Create file: {file}",
   createFileConfirm: "Create file {file}?",
+  viewMode: "View",
+  "view.editor": "Editor",
+  "view.both": "Both",
+  "view.pdf": "PDF",
 };

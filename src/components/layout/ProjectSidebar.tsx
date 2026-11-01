@@ -9,6 +9,7 @@ import type { OutlineItem } from "@/types/desktop";
 
 interface ProjectSidebarProps {
   chat: ReactNode;
+  viewPicker: ReactNode;
   name: string;
   files: string[];
   activeFile: string;
@@ -30,6 +31,7 @@ interface ProjectSidebarProps {
 
 export function ProjectSidebar({
   chat,
+  viewPicker,
   name,
   files,
   activeFile,
@@ -65,6 +67,7 @@ export function ProjectSidebar({
         <p title={name} className="mt-2 truncate text-sm font-semibold">
           {name}
         </p>
+        {viewPicker}
         {/* Saved projects save themselves; only a new document needs a place first. */}
         {!canSave && (
           <button
@@ -126,25 +129,15 @@ export function ProjectSidebar({
         {isSearching ? (
           <ProjectSearch onSelect={onSelectOutline} />
         ) : (
-          <>
-            <FileList files={files} activeFile={activeFile} mainFile={mainFile} onSelect={onSelectFile} />
-            {folders.map((folder) => (
-              <p key={folder} title={folder} className="truncate px-3 py-1 text-xs text-muted">
-                📁 {folder}
-              </p>
-            ))}
-            {images.map((image) => (
-              <button
-                key={image}
-                type="button"
-                title={t("insertImage")}
-                onClick={() => onInsertImage(image)}
-                className="block w-full truncate px-3 py-1 text-left text-xs text-muted hover:text-accent"
-              >
-                🖼 {image}
-              </button>
-            ))}
-          </>
+          <FileList
+            files={files}
+            images={images}
+            folders={folders}
+            activeFile={activeFile}
+            mainFile={mainFile}
+            onSelect={onSelectFile}
+            onInsertImage={onInsertImage}
+          />
         )}
       </div>
 

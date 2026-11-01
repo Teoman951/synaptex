@@ -181,4 +181,8 @@ export const tr: Record<string, string> = {
   insertImage: "Tıklama görseli imlece ekler",
   createFile: "Dosya oluştur: {file}",
   createFileConfirm: "{file} dosyası oluşturulsun mu?",
+  viewMode: "Görünüm",
+  "view.editor": "Editör",
+  "view.both": "İkisi",
+  "view.pdf": "PDF",
 };
