@@ -72,6 +72,19 @@ async function runBibliography(baseName, projectDir, outputDir, signal) {
   return null;
 }
 
+// Maps a point on a PDF page (big points from the top left) to its source line.
+export async function locateSource({ projectDir, outputDir, mainFile, page, x, y }) {
+  const pdfPath = path.join(outputDir, `${path.basename(mainFile, ".tex")}.pdf`);
+  const { output } = await run(findTool("synctex"), ["edit", "-o", `${page}:${x}:${y}:${pdfPath}`, "-d", outputDir], {
+    cwd: projectDir,
+  });
+  const input = output.match(/^Input:(.+)$/m)?.[1]?.trim();
+  const line = Number(output.match(/^Line:(\d+)$/m)?.[1]);
+  if (!input || !line) return null;
+  const file = path.relative(projectDir, path.resolve(projectDir, input)).replaceAll("\\", "/");
+  return file.startsWith("..") ? null : { file, line };
+}
+
 // The compiler contract: project folder in, PDF and log out. Other backends
 // (Tectonic, a remote server) implement the same function.
 export async function compileProject({ projectDir, mainFile, engine, outputDir, signal, onProgress = () => {} }) {
@@ -85,6 +98,7 @@ export async function compileProject({ projectDir, mainFile, engine, outputDir, 
   const args = [
     "-interaction=nonstopmode",
     "-no-shell-escape",
+    "-synctex=1",
     "-file-line-error",
     `-output-directory=${outputDir}`,
     ...(tool.toLowerCase().includes("miktex") ? ["--enable-installer", "--max-print-line=100000"] : []),

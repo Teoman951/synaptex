@@ -5,7 +5,7 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createCheckpoint, listCheckpoints, loadCheckpoint } from "./checkpoints.mjs";
-import { compileProject } from "./compiler.mjs";
+import { compileProject, locateSource } from "./compiler.mjs";
 import { complete, stopServer } from "./ai.mjs";
 import {
   createConversation,
@@ -168,6 +168,10 @@ async function loadProject(root, activeFile) {
   return { name: path.basename(root), files, mainFile, engine, activeFile: active, content };
 }
 
+function buildFolder() {
+  return path.join(app.getPath("userData"), "build");
+}
+
 function registerProjectHandlers() {
   ipcMain.handle("project:open-file", async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender);
@@ -253,6 +257,18 @@ function registerProjectHandlers() {
     return loadProject(projectRoot, activeFile);
   });
 
+  ipcMain.handle("project:locate-source", (_event, mainFile, page, x, y) => {
+    resolveInProject(mainFile);
+    return locateSource({
+      projectDir: projectRoot,
+      outputDir: buildFolder(),
+      mainFile,
+      page: Number(page),
+      x: Number(x),
+      y: Number(y),
+    });
+  });
+
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));
 
   ipcMain.handle("project:write", (_event, file, content) =>
@@ -277,7 +293,7 @@ function registerProjectHandlers() {
       projectDir: projectRoot,
       mainFile,
       engine,
-      outputDir: path.join(app.getPath("userData"), "build"),
+      outputDir: buildFolder(),
       signal: compileAbort.signal,
       onProgress: (message) => event.sender.send("project:compile-progress", message),
     });
@@ -488,6 +504,8 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: true,
       webSecurity: true,
+      // pdf.js renders on animation frames, which stop in a throttled window.
+      backgroundThrottling: false,
     },
   });
 

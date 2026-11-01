@@ -114,6 +114,12 @@ export interface SynaptexDesktopApi {
   sendMessage: (id: string, text: string, context: string) => Promise<Conversation>;
   listCheckpoints: () => Promise<Checkpoint[]>;
   restoreCheckpoint: (id: string, activeFile: string) => Promise<OpenedProject>;
+  locateSource: (
+    mainFile: string,
+    page: number,
+    x: number,
+    y: number,
+  ) => Promise<{ file: string; line: number } | null>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

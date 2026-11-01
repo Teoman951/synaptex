@@ -42,5 +42,6 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   sendMessage: (id, text, context) => ipcRenderer.invoke("chat:send", id, text, context),
   listCheckpoints: () => ipcRenderer.invoke("checkpoint:list"),
   restoreCheckpoint: (id, activeFile) => ipcRenderer.invoke("checkpoint:restore", id, activeFile),
+  locateSource: (mainFile, page, x, y) => ipcRenderer.invoke("project:locate-source", mainFile, page, x, y),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

@@ -51,6 +51,8 @@ async function renderPdf(
     canvas.height = viewport.height;
     canvas.style.width = `${width}px`;
     canvas.className = "mx-auto mb-4 max-w-none rounded-sm bg-white";
+    canvas.dataset.page = String(number);
+    canvas.dataset.pointWidth = String(page.getViewport({ scale: 1 }).width);
     await page.render({ canvas, viewport }).promise;
     pages.push(canvas);
   }
@@ -101,6 +103,7 @@ interface PdfPreviewProps {
   onCompile: () => void;
   onCancelCompile: () => void;
   onSelectError: (file: string, line: number) => void;
+  onSelectPdfPoint: (page: number, x: number, y: number) => void;
   autoCompile: boolean;
   onAutoCompileChange: (enabled: boolean) => void;
 }
@@ -115,6 +118,7 @@ export function PdfPreview({
   onCompile,
   onCancelCompile,
   onSelectError,
+  onSelectPdfPoint,
   autoCompile,
   onAutoCompileChange,
 }: PdfPreviewProps) {
@@ -213,7 +217,21 @@ export function PdfPreview({
         </button>
       </div>
 
-      <div ref={pagesRef} className="min-h-0 flex-1 overflow-auto p-4" />
+      <div
+        ref={pagesRef}
+        title="Klick springt zur Stelle im Quelltext"
+        onClick={(event) => {
+          const { target, nativeEvent } = event;
+          if (!(target instanceof HTMLCanvasElement)) return;
+          const pointsPerPixel = Number(target.dataset.pointWidth) / target.clientWidth;
+          onSelectPdfPoint(
+            Number(target.dataset.page),
+            nativeEvent.offsetX * pointsPerPixel,
+            nativeEvent.offsetY * pointsPerPixel,
+          );
+        }}
+        className="min-h-0 flex-1 overflow-auto p-4"
+      />
       {result && result.errors.length > 0 && (
         <details open className="shrink-0 border-t border-line bg-surface">
           <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-red-400">

@@ -8,6 +8,7 @@ import { PaneHeader } from "@/components/layout/PaneHeader";
 import { ProjectHome } from "@/components/layout/ProjectHome";
 import { ProjectSidebar } from "@/components/layout/ProjectSidebar";
 import { PdfPreview } from "@/components/preview/PdfPreview";
+import { getDesktopApi } from "@/lib/desktop";
 import { useProject } from "@/state/useProject";
 
 // CodeMirror needs the DOM, so it must never render during the static export.
@@ -35,6 +36,7 @@ export function Workspace() {
   );
   const onRenderError = useCallback(() => setRenderFailed(true), []);
   const editorRef = useRef<EditorView | null>(null);
+  const pendingJumpRef = useRef<{ file: string; line: number } | null>(null);
   const onEditorReady = useCallback((view: EditorView) => {
     editorRef.current = view;
   }, []);
@@ -95,16 +97,37 @@ export function Workspace() {
     view.focus();
   }
 
+  function moveToLine(view: EditorView, line: number) {
+    const { from } = view.state.doc.line(Math.min(line, view.state.doc.lines));
+    view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
+    view.focus();
+  }
+
   async function jumpTo(file: string, line: number) {
-    if (file !== project.activeFile) await project.selectFile(file);
-    // The editor receives a newly loaded file on the next frame.
-    requestAnimationFrame(() => {
-      const view = editorRef.current;
-      if (!view) return;
-      const { from } = view.state.doc.line(Math.min(line, view.state.doc.lines));
-      view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
-      view.focus();
-    });
+    const view = editorRef.current;
+    if (file === project.activeFile) {
+      if (view) moveToLine(view, line);
+      return;
+    }
+    pendingJumpRef.current = { file, line };
+    await project.selectFile(file);
+  }
+
+  // A jump into another file has to wait until the editor shows that file.
+  useEffect(() => {
+    const pending = pendingJumpRef.current;
+    const view = editorRef.current;
+    if (!pending || !view || pending.file !== project.activeFile) return;
+    if (view.state.doc.toString() !== content) return;
+    pendingJumpRef.current = null;
+    moveToLine(view, pending.line);
+  });
+
+  async function jumpToPdfPoint(page: number, x: number, y: number) {
+    const mainFile = project.project?.mainFile;
+    if (!mainFile) return;
+    const source = await getDesktopApi()?.locateSource(mainFile, page, x, y);
+    if (source) await jumpTo(source.file, source.line);
   }
 
   if (!project.isOpen) {
@@ -168,6 +191,7 @@ export function Workspace() {
             onCompile={startCompile}
             onCancelCompile={project.cancelCompile}
             onSelectError={jumpTo}
+            onSelectPdfPoint={jumpToPdfPoint}
             autoCompile={autoCompile}
             onAutoCompileChange={changeAutoCompile}
           />
