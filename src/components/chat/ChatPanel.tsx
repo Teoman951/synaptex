@@ -105,6 +105,7 @@ interface ChatPanelProps {
 
 export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatPanelProps) {
   const [isConfigured, setIsConfigured] = useState(false);
+  const [cloudModel, setCloudModel] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
   const [input, setInput] = useState("");
@@ -118,6 +119,8 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
     if (!api) return;
     const [configured, list] = await Promise.all([api.aiConfigured(), api.listConversations()]);
     setIsConfigured(configured);
+    const cloud = await api.cloudState();
+    setCloudModel(cloud.active ? cloud.model : null);
     setConversations(list);
   }, []);
 
@@ -205,6 +208,9 @@ export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatP
 
   return (
     <div className="flex min-h-0 flex-1 flex-col text-xs">
+      {cloudModel && (
+        <p className="border-b border-line p-2 text-amber-400">{t("cloudNotice", { model: cloudModel })}</p>
+      )}
       {storageBanner && (
         <p
           role="alert"

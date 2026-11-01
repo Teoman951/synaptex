@@ -99,6 +99,7 @@ export interface SearchMatch {
 
 export interface McpState {
   connected: boolean;
+  server: { command: string; args: string[]; env: Record<string, string> };
   projects: { id: string; name: string; shared: boolean }[];
   log: { at: number; tool: string; project: string | null; file: string | null }[];
 }
@@ -107,6 +108,23 @@ export interface ScanFinding {
   file: string;
   line: number;
   rule: string;
+}
+
+export interface CloudState {
+  active: boolean;
+  provider: string;
+  model: string;
+  providers: { id: string; name: string; defaultModel: string; hasKey: boolean }[];
+}
+
+export interface McpProposal {
+  id: string;
+  at: number;
+  project: string;
+  file: string;
+  oldText: string;
+  newText: string;
+  reason: string;
 }
 
 export interface CompileError {
@@ -187,6 +205,13 @@ export interface SynaptexDesktopApi {
   exportZip: (id?: string) => Promise<void>;
   revealProject: (id: string) => Promise<void>;
   scanProject: () => Promise<ScanFinding[]>;
+  cloudState: () => Promise<CloudState>;
+  cloudSave: (provider: string, model: string, apiKey: string) => Promise<void>;
+  cloudRemoveKey: (provider: string) => Promise<void>;
+  cloudActivate: (active: boolean) => Promise<void>;
+  mcpProposals: () => Promise<McpProposal[]>;
+  mcpApprove: (id: string) => Promise<void>;
+  mcpReject: (id: string) => Promise<void>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

@@ -12,6 +12,7 @@
     "package:dir": "node scripts/fetch-tectonic.mjs && next build && electron-builder --dir"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
     "fflate": "^0.8.3"
   },
   "devDependencies": {

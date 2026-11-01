@@ -1,6 +1,7 @@
-// Read-only MCP server, started by the AI client over stdio.
+// MCP server that reads shared projects and only ever proposes changes, started by the AI client over stdio.
 // Runs without Electron APIs: the app launches it with ELECTRON_RUN_AS_NODE.
-import { appendFile, readdir, readFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { appendFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
 
@@ -9,6 +10,8 @@ const PROTOCOL_VERSION = "2024-11-05";
 const TEXT_EXTENSIONS = new Set([".tex", ".bib", ".sty", ".cls", ".bst", ".txt", ".md"]);
 const MAX_FILES = 5000;
 const MAX_MATCHES = 100;
+const MAX_PROPOSAL_CHARS = 200_000;
+const MAX_PROPOSALS = 100;
 
 const TOOLS = [
   {
@@ -37,6 +40,22 @@ const TOOLS = [
       type: "object",
       properties: { project: { type: "string" }, query: { type: "string" } },
       required: ["project", "query"],
+    },
+  },
+  {
+    name: "propose_edit",
+    description:
+      "Proposes replacing old_text with new_text in a file of a shared project. Nothing changes until the user approves it in SynapTeX. old_text must occur exactly once.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        project: { type: "string" },
+        file: { type: "string" },
+        old_text: { type: "string" },
+        new_text: { type: "string" },
+        reason: { type: "string" },
+      },
+      required: ["project", "file", "old_text", "new_text"],
     },
   },
 ];
@@ -91,6 +110,20 @@ async function callTool(name, args) {
       }
     }
     return matches.join("\n");
+  }
+  if (name === "propose_edit") {
+    const [oldText, newText] = [String(args.old_text ?? ""), String(args.new_text ?? "")];
+    if (!oldText || oldText.length + newText.length > MAX_PROPOSAL_CHARS) throw new Error("The change is empty or too large.");
+    const source = await readFile(resolveFile(root, args.file), "utf8");
+    if (source.split(oldText).length !== 2) throw new Error("old_text must occur exactly once in the file.");
+
+    const folder = path.join(dataFolder, "mcp-proposals");
+    await mkdir(folder, { recursive: true });
+    if ((await readdir(folder)).length >= MAX_PROPOSALS) throw new Error("Too many open proposals.");
+    const id = randomUUID();
+    const proposal = { id, at: Date.now(), project: args.project, file: String(args.file), oldText, newText, reason: String(args.reason ?? "").slice(0, 500) };
+    await writeFile(path.join(folder, `${id}.json`), JSON.stringify(proposal), "utf8");
+    return "Proposal saved. It is not applied until the user approves it in SynapTeX.";
   }
   throw new Error(`Unknown tool: ${name}`);
 }

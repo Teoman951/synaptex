@@ -3,18 +3,52 @@
 import { useCallback, useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import { language, t } from "@/lib/i18n";
-import type { McpState } from "@/types/desktop";
+import { diffLines } from "@/lib/lineDiff";
+import type { McpProposal, McpState } from "@/types/desktop";
+
+const PROPOSAL_POLL_MS = 3000;
 
 const timeFormat = new Intl.DateTimeFormat(language, { dateStyle: "short", timeStyle: "short" });
+
+function CopyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 py-1">
+      <span className="w-28 shrink-0 text-muted">{label}</span>
+      <code className="min-w-0 flex-1 truncate rounded bg-surface px-2 py-1" title={value}>
+        {value}
+      </code>
+      <button
+        type="button"
+        onClick={() => navigator.clipboard.writeText(value)}
+        className="shrink-0 text-accent hover:underline"
+      >
+        {t("copy")}
+      </button>
+    </div>
+  );
+}
 
 export function ConnectionsPanel() {
   const [state, setState] = useState<McpState | null>(null);
   const [failed, setFailed] = useState(false);
+  const [proposals, setProposals] = useState<McpProposal[]>([]);
+
+  const loadProposals = useCallback(async () => {
+    const next = await getDesktopApi()?.mcpProposals();
+    if (next) setProposals(next);
+  }, []);
+
+  // Proposals arrive from another program, so there is no event to wait for.
+  useEffect(() => {
+    const timer = setInterval(loadProposals, PROPOSAL_POLL_MS);
+    return () => clearInterval(timer);
+  }, [loadProposals]);
 
   const load = useCallback(async () => {
     const next = await getDesktopApi()?.mcpState();
     if (next) setState(next);
-  }, []);
+    await loadProposals();
+  }, [loadProposals]);
 
   useEffect(() => {
     // load only sets state after awaiting the main process.
@@ -58,6 +92,59 @@ export function ConnectionsPanel() {
       </p>
       {state.connected && <p className="mt-2 text-muted">{t("mcpRestart")}</p>}
       {failed && <p role="alert" className="mt-2 text-red-400">{t("mcpFailed")}</p>}
+
+      <h2 className="mt-6 mb-1 font-medium">{t("chatgptTitle")}</h2>
+      <p className="mb-2 text-muted">{t("chatgptHint")}</p>
+      <CopyField label="Name" value="synaptex" />
+      <CopyField label={t("chatgptCommand")} value={state.server.command} />
+      {state.server.args.map((arg, index) => (
+        <CopyField key={arg} label={`${t("chatgptArgument")} ${index + 1}`} value={arg} />
+      ))}
+      <CopyField label={t("chatgptEnvKey")} value="ELECTRON_RUN_AS_NODE" />
+      <CopyField label={t("chatgptEnvValue")} value="1" />
+
+      <h2 className="mt-6 mb-2 font-medium">{t("mcpProposals")}</h2>
+      {proposals.length === 0 && <p className="text-muted">{t("mcpNoProposals")}</p>}
+      {proposals.map((proposal) => (
+        <div key={proposal.id} className="mb-3 rounded border border-line p-2">
+          <p className="font-medium">
+            {proposal.project}: {proposal.file}
+          </p>
+          {proposal.reason && <p className="text-muted">{proposal.reason}</p>}
+          <pre className="my-2 max-h-48 overflow-auto font-mono text-[11px]">
+            {diffLines(proposal.oldText, proposal.newText).map((line, index) => (
+              <div
+                key={index}
+                className={
+                  line.type === "added"
+                    ? "bg-green-500/15 text-green-300"
+                    : line.type === "removed"
+                      ? "bg-red-500/15 text-red-300"
+                      : "text-muted"
+                }
+              >
+                {line.text}
+              </div>
+            ))}
+          </pre>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => update(() => api?.mcpApprove(proposal.id))}
+              className="rounded bg-accent px-2 py-1 font-medium text-canvas"
+            >
+              {t("apply")}
+            </button>
+            <button
+              type="button"
+              onClick={() => update(() => api?.mcpReject(proposal.id))}
+              className="text-muted hover:text-accent"
+            >
+              {t("reject")}
+            </button>
+          </div>
+        </div>
+      ))}
 
       <h2 className="mt-6 mb-2 font-medium">{t("mcpShared")}</h2>
       {state.projects.length === 0 && <p className="text-muted">{t("noProjects")}</p>}

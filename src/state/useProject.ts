@@ -28,6 +28,7 @@ export function useProject() {
   const [project, setProject] = useState<OpenedProject | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [activeFile, setActiveFile] = useState("main.tex");
+  const [openFiles, setOpenFiles] = useState(["main.tex"]);
   const [content, setContent] = useState(INITIAL_DOCUMENT);
   const [savedContent, setSavedContent] = useState(INITIAL_DOCUMENT);
   const [engine, setEngine] = useState<Engine>("pdflatex");
@@ -61,6 +62,7 @@ export function useProject() {
     setProject(opened);
     setIsOpen(true);
     setActiveFile(opened.activeFile);
+    setOpenFiles([opened.activeFile]);
     setContent(opened.content);
     setSavedContent(opened.content);
     setEngine(opened.engine);
@@ -88,6 +90,7 @@ export function useProject() {
     if (isDirty && !window.confirm(t("discardConfirm"))) return;
     setProject(null);
     setActiveFile("main.tex");
+    setOpenFiles(["main.tex"]);
     setContent(INITIAL_DOCUMENT);
     setSavedContent(INITIAL_DOCUMENT);
     setEngine("pdflatex");
@@ -121,6 +124,15 @@ export function useProject() {
     });
   }
 
+  // Closing the active tab moves to its neighbour; the last tab stays open.
+  async function closeFile(file: string) {
+    if (openFiles.length === 1) return;
+    const index = openFiles.indexOf(file);
+    const remaining = openFiles.filter((item) => item !== file);
+    if (file === activeFile) await selectFile(remaining[Math.max(0, index - 1)]);
+    setOpenFiles(remaining);
+  }
+
   async function restoreCheckpoint(id: string) {
     const question = t("restoreConfirm");
     if (!window.confirm(question)) return;
@@ -137,6 +149,7 @@ export function useProject() {
       const next = await getDesktopApi()?.readFile(file);
       if (next === undefined) return;
       setActiveFile(file);
+      setOpenFiles((files) => (files.includes(file) ? files : [...files, file]));
       setContent(next);
       setSavedContent(next);
     });
@@ -187,6 +200,8 @@ export function useProject() {
     project,
     isOpen,
     activeFile,
+    openFiles,
+    closeFile,
     content,
     setContent,
     engine,

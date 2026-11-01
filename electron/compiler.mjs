@@ -54,6 +54,7 @@ async function mirrorFolders(from, to) {
 function parseErrors(log) {
   const errors = new Map();
   for (const line of log.split(/\r?\n/)) {
+    if (/^warning: |(?:Under|Over)full \\[hv]box/.test(line)) continue;
     const match = line.match(/^(?:error: )?(.+?\.(?:tex|sty|cls)):(\d+): (.*)$/);
     if (!match) continue;
     const file = path.posix.normalize(match[1].replaceAll("\\", "/"));
@@ -116,7 +117,7 @@ async function restrictedMiktexEnv(folder) {
 
 async function runTectonic({ projectDir, mainFile, outputDir, signal, tectonicPath, onProgress }) {
   onProgress(text("tectonic"));
-  const args = [mainFile, "--outdir", outputDir, "--synctex", "--chatter", "minimal"];
+  const args = [mainFile, "--outdir", outputDir, "--synctex", "--chatter", "minimal", "-Z", "continue-on-errors"];
   const { error, output } = await run(tectonicPath, args, { cwd: projectDir, signal });
   if (signal?.aborted) return { ok: false, cancelled: true, pdf: null, errors: [], log: output };
   if (error?.code === "ENOENT") {

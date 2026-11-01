@@ -244,7 +244,35 @@ export function Workspace() {
         />
         <div ref={panesRef} className="flex min-h-0 min-w-0 flex-1">
         <section style={{ width: `${editorShare * 100}%` }} className="flex min-h-0 min-w-0 shrink-0 flex-col bg-black">
-          <PaneHeader title={project.isDirty ? `${project.activeFile} •` : project.activeFile}>
+          <PaneHeader
+            title={
+              <div role="tablist" className="flex gap-1 overflow-x-auto">
+                {project.openFiles.map((file) => (
+                  <span
+                    key={file}
+                    className={`flex shrink-0 items-center gap-1 rounded px-2 py-0.5 ${
+                      file === project.activeFile ? "bg-surface text-foreground" : ""
+                    }`}
+                  >
+                    <button type="button" role="tab" aria-selected={file === project.activeFile} onClick={() => project.selectFile(file)}>
+                      {file.split("/").pop()}
+                      {file === project.activeFile && project.isDirty ? " •" : ""}
+                    </button>
+                    {project.openFiles.length > 1 && (
+                      <button
+                        type="button"
+                        aria-label={t("closeTab", { file })}
+                        onClick={() => project.closeFile(file)}
+                        className="hover:text-accent"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            }
+          >
             <button
               type="button"
               aria-label={t("smallerFont")}

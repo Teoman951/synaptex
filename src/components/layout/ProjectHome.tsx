@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CloudPanel } from "@/components/chat/CloudPanel";
 import { ModelPicker } from "@/components/chat/ModelPicker";
 import { ConnectionsPanel } from "@/components/layout/ConnectionsPanel";
 import { Logo } from "@/components/layout/Logo";
@@ -192,6 +193,7 @@ export function ProjectHome({
       {view === "models" && (
         <main className="min-w-0 flex-1 overflow-auto bg-surface/40">
           <h1 className="border-b border-line p-4 text-base font-semibold">{t("aiModels")}</h1>
+          <CloudPanel />
           <ModelPicker />
         </main>
       )}

@@ -1,10 +1,11 @@
-import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, net, protocol, safeStorage, shell } from "electron";
 import updater from "electron-updater";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { completeCloud, PROVIDERS } from "./cloudAi.mjs";
 import { createCheckpoint, listCheckpoints, loadCheckpoint } from "./checkpoints.mjs";
 import { compileProject, hasTexDistribution, locateSource } from "./compiler.mjs";
 import { complete, stopServer } from "./ai.mjs";
@@ -418,6 +419,23 @@ async function readAiSettings() {
   return usable ? settings : null;
 }
 
+function cloudConfig(settings) {
+  const { cloud } = settings;
+  const stored = cloud?.active ? cloud.keys?.[cloud.provider] : null;
+  if (!stored) return null;
+  return {
+    provider: cloud.provider,
+    model: cloud.model,
+    apiKey: safeStorage.decryptString(Buffer.from(stored, "base64")),
+  };
+}
+
+// Sends to the cloud provider when one is active, otherwise to the local model.
+async function generate(settings, messages, options) {
+  const config = cloudConfig(settings);
+  return config ? completeCloud(config, messages, options) : complete(settings, messages, options);
+}
+
 async function allModels(settings) {
   const detected = [
     ...(await findGguf(modelsFolder(), "SynapTeX")),
@@ -466,7 +484,7 @@ async function compressConversation(folder, conversation, settings) {
   const older = conversation.messages.slice(0, -KEEP_AFTER_COMPRESS);
   if (older.length === 0) return conversation;
   const transcript = older.map(({ role, content }) => `${role}: ${content}`).join("\n");
-  const summary = await complete(
+  const summary = await generate(
     settings,
     [
       {
@@ -510,6 +528,23 @@ async function readSharedProjects() {
   return JSON.parse(await readFile(sharedProjectsFile(), "utf8").catch(() => "[]"));
 }
 
+function proposalsFolder() {
+  return path.join(app.getPath("userData"), "mcp-proposals");
+}
+
+function proposalFile(id) {
+  if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error("Invalid proposal id");
+  return path.join(proposalsFolder(), `${id}.json`);
+}
+
+function mcpCommand() {
+  return {
+    command: process.execPath,
+    args: [path.join(electronDir, "mcp-server.mjs"), app.getPath("userData")],
+    env: { ELECTRON_RUN_AS_NODE: "1" },
+  };
+}
+
 function registerMcpHandlers() {
   ipcMain.handle("mcp:state", async () => {
     const config = await readClaudeConfig().catch(() => ({}));
@@ -517,6 +552,7 @@ function registerMcpHandlers() {
     const raw = await readFile(path.join(app.getPath("userData"), "mcp-log.jsonl"), "utf8").catch(() => "");
     return {
       connected: Boolean(config.mcpServers?.synaptex),
+      server: mcpCommand(),
       projects: (await readRecentProjects()).map(({ id, name, path: root }) => ({
         id,
         name,
@@ -532,11 +568,7 @@ function registerMcpHandlers() {
       ...config,
       mcpServers: {
         ...config.mcpServers,
-        synaptex: {
-          command: process.execPath,
-          args: [path.join(electronDir, "mcp-server.mjs"), app.getPath("userData")],
-          env: { ELECTRON_RUN_AS_NODE: "1" },
-        },
+        synaptex: mcpCommand(),
       },
     });
   });
@@ -546,6 +578,40 @@ function registerMcpHandlers() {
     const servers = { ...config.mcpServers };
     delete servers.synaptex;
     await writeClaudeConfig({ ...config, mcpServers: servers });
+  });
+
+  ipcMain.handle("mcp:proposals", async () => {
+    const folder = proposalsFolder();
+    const names = await readdir(folder).catch(() => []);
+    const proposals = await Promise.all(
+      names.map((name) => readFile(path.join(folder, name), "utf8").then(JSON.parse).catch(() => null)),
+    );
+    return proposals.filter(Boolean).sort((a, b) => a.at - b.at);
+  });
+
+  ipcMain.handle("mcp:reject", (_event, id) => rm(proposalFile(id), { force: true }));
+
+  // Re-checks everything: the proposal came from an outside program.
+  ipcMain.handle("mcp:approve", async (_event, id) => {
+    const proposal = JSON.parse(await readFile(proposalFile(id), "utf8"));
+    const project = (await readSharedProjects()).find((item) => item.name === proposal.project);
+    if (!project) throw new Error("Project is no longer shared");
+
+    const target = path.resolve(project.path, proposal.file);
+    const inside = target.startsWith(path.resolve(project.path) + path.sep);
+    if (!inside || !TEXT_EXTENSIONS.has(path.extname(target).toLowerCase())) throw new Error("Unsafe path");
+
+    const source = await readFile(target, "utf8");
+    if (source.split(proposal.oldText).length !== 2) throw new Error("File has changed");
+
+    await createCheckpoint(
+      path.join(app.getPath("userData"), "checkpoints", projectId(project.path)),
+      project.path,
+      await listTextFiles(project.path),
+      "Vor KI-Änderung",
+    );
+    await writeFile(target, source.replace(proposal.oldText, () => proposal.newText), "utf8");
+    await rm(proposalFile(id), { force: true });
   });
 
   ipcMain.handle("mcp:share", async (_event, id, shared) => {
@@ -560,7 +626,52 @@ function registerMcpHandlers() {
 function registerChatHandlers() {
   ipcMain.handle("app:set-language", (_event, language) => setLanguage(language));
 
-  ipcMain.handle("ai:configured", async () => Boolean(await readAiSettings()));
+  ipcMain.handle("ai:configured", async () => {
+    const settings = await readModelSettings();
+    return Boolean(cloudConfig(settings) || (await readAiSettings()));
+  });
+
+  ipcMain.handle("ai:cloud-state", async () => {
+    const { cloud = {} } = await readModelSettings();
+    const provider = cloud.provider ?? "anthropic";
+    return {
+      active: Boolean(cloud.active),
+      provider,
+      model: cloud.model ?? PROVIDERS[provider].defaultModel,
+      providers: Object.entries(PROVIDERS).map(([id, { name, defaultModel }]) => ({
+        id,
+        name,
+        defaultModel,
+        hasKey: Boolean(cloud.keys?.[id]),
+      })),
+    };
+  });
+
+  // The renderer can store a key but never read one back.
+  ipcMain.handle("ai:cloud-save", async (_event, provider, model, apiKey) => {
+    if (!PROVIDERS[provider]) throw new Error("Unknown provider");
+    const settings = await readModelSettings();
+    const keys = { ...settings.cloud?.keys };
+    if (apiKey) {
+      if (!safeStorage.isEncryptionAvailable()) throw new Error("No secure storage available");
+      keys[provider] = safeStorage.encryptString(String(apiKey)).toString("base64");
+    }
+    await writeModelSettings({ ...settings, cloud: { ...settings.cloud, provider, model: String(model), keys } });
+  });
+
+  ipcMain.handle("ai:cloud-remove-key", async (_event, provider) => {
+    const settings = await readModelSettings();
+    const keys = { ...settings.cloud?.keys };
+    delete keys[provider];
+    const active = settings.cloud?.active && settings.cloud.provider !== provider;
+    await writeModelSettings({ ...settings, cloud: { ...settings.cloud, keys, active } });
+  });
+
+  ipcMain.handle("ai:cloud-activate", async (_event, active) => {
+    const settings = await readModelSettings();
+    await writeModelSettings({ ...settings, cloud: { ...settings.cloud, active: Boolean(active) } });
+  });
+
 
   ipcMain.handle("ai:models", async () => {
     const settings = await readModelSettings();
@@ -675,11 +786,12 @@ function registerChatHandlers() {
 
   ipcMain.handle("chat:compress", async (_event, id) => {
     const folder = conversationsFolder();
-    return compressConversation(folder, await loadConversation(folder, id), await readAiSettings());
+    return compressConversation(folder, await loadConversation(folder, id), await readModelSettings());
   });
 
   ipcMain.handle("chat:send", async (event, id, text, context) => {
-    const settings = await readAiSettings();
+    const stored = await readModelSettings();
+    const settings = cloudConfig(stored) ? stored : await readAiSettings();
     if (!settings) throw new Error("AI not configured");
     const folder = conversationsFolder();
     const conversation = await loadConversation(folder, id);
@@ -690,7 +802,7 @@ function registerChatHandlers() {
     let reply = "";
     try {
       if (!CONTEXT_SIZES.has(context.contextTokens)) throw new Error("Invalid context size");
-      await complete({ ...settings, contextSize: context.contextTokens }, promptFor(conversation, context), {
+      await generate({ ...settings, contextSize: context.contextTokens }, promptFor(conversation, context), {
         signal: aiAbort.signal,
         onToken: (token) => {
           reply += token;

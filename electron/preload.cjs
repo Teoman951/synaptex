@@ -64,5 +64,12 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   exportZip: (id) => ipcRenderer.invoke("project:export-zip", id),
   revealProject: (id) => ipcRenderer.invoke("project:reveal", id),
   scanProject: () => ipcRenderer.invoke("project:scan"),
+  cloudState: () => ipcRenderer.invoke("ai:cloud-state"),
+  cloudSave: (provider, model, apiKey) => ipcRenderer.invoke("ai:cloud-save", provider, model, apiKey),
+  cloudRemoveKey: (provider) => ipcRenderer.invoke("ai:cloud-remove-key", provider),
+  cloudActivate: (active) => ipcRenderer.invoke("ai:cloud-activate", active),
+  mcpProposals: () => ipcRenderer.invoke("mcp:proposals"),
+  mcpApprove: (id) => ipcRenderer.invoke("mcp:approve", id),
+  mcpReject: (id) => ipcRenderer.invoke("mcp:reject", id),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });
