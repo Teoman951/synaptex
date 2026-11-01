@@ -1,5 +1,5 @@
 // Mirrors the API exposed in electron/preload.cjs.
-export type Engine = "pdflatex" | "xelatex" | "lualatex";
+export type Engine = "tectonic" | "pdflatex" | "xelatex" | "lualatex";
 
 export interface OpenedProject {
   name: string;

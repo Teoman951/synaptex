@@ -12,6 +12,8 @@ Schreibe und kompiliere LaTeX ohne Cloud. Deine Dokumente und KI-Unterhaltungen 
 
 </div>
 
+![SynapTeX mit Editor und PDF-Vorschau](docs/assets/editor.png)
+
 ## Warum SynapTeX
 
 - **Lokal:** Kompilieren und KI laufen auf deinem Computer. Ein Konto brauchst du nicht.
@@ -30,7 +32,8 @@ Schreibe und kompiliere LaTeX ohne Cloud. Deine Dokumente und KI-Unterhaltungen 
 
 ### Kompilieren
 
-- pdfLaTeX, XeLaTeX und LuaLaTeX über eine lokale TeX-Installation
+- Tectonic ist mitgeliefert, neue Dokumente kompilieren ohne Einrichtung (Pakete werden beim ersten Mal geladen)
+- pdfLaTeX, XeLaTeX und LuaLaTeX über eine lokale TeX-Installation, empfohlen für Overleaf-Projekte
 - Literaturverzeichnis mit BibTeX oder Biber und automatische Durchläufe
 - PDF-Vorschau mit Zoom, Fortschrittsanzeige und Abbrechen
 - Optionales Auto-Kompilieren nach dem Tippen
@@ -46,22 +49,27 @@ Kleine lokale Modelle machen Fehler. Prüfe Vorschläge, bevor du sie übernimms
 
 ## Status
 
-SynapTeX ist in früher Entwicklung und getestet unter Windows. Es gibt noch keinen Installer, keine Releases und keine Auto-Updates. macOS und Linux sind vorbereitet, aber ungetestet.
+SynapTeX ist in früher Entwicklung und getestet unter Windows. macOS und Linux sind vorbereitet, aber ungetestet. Der Installer ist noch nicht signiert, Windows zeigt deshalb eine Warnung.
 
-Geplant sind unter anderem ein mitgelieferter Compiler und Zusammenarbeit.
+Geplant ist unter anderem Zusammenarbeit.
+
+**Netzwerk:** Die App prüft beim Start auf GitHub, ob ein Update vorliegt, und fragt vor dem Download. Pakete und Modelle werden nur bei Bedarf geladen.
 
 ## Erste Schritte
 
-Du brauchst [Node.js](https://nodejs.org) und eine TeX-Distribution wie [MiKTeX](https://miktex.org) oder TeX Live.
+Den Windows-Installer findest du unter [Releases](https://github.com/Teoman951/synaptex/releases).
+
+Zum Entwickeln brauchst du [Node.js](https://nodejs.org) und eine TeX-Distribution wie [MiKTeX](https://miktex.org) oder TeX Live.
 
 ```bash
 git clone https://github.com/Teoman951/synaptex.git
 cd synaptex
 npm install
+node scripts/fetch-tectonic.mjs
 npm run dev:desktop
 ```
 
-Für die KI brauchst du zusätzlich `llama-server` aus [llama.cpp](https://github.com/ggml-org/llama.cpp) und ein GGUF-Modell. Beide wählst du im Reiter **Unterhaltungen** aus.
+Die KI richtest du im Reiter **Unterhaltungen** ein: Vorhandene Modelle werden erkannt, weitere lassen sich per Klick laden.
 
 ### Befehle
 

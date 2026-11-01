@@ -1,11 +1,12 @@
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from "electron";
+import updater from "electron-updater";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createCheckpoint, listCheckpoints, loadCheckpoint } from "./checkpoints.mjs";
-import { compileProject, locateSource } from "./compiler.mjs";
+import { compileProject, hasTexDistribution, locateSource } from "./compiler.mjs";
 import { complete, stopServer } from "./ai.mjs";
 import {
   createConversation,
@@ -112,7 +113,7 @@ async function listTextFiles(root, relative = "") {
 
 // fontspec and unicode-math do not work with pdflatex.
 function detectEngine(source) {
-  return /\\usepackage(\[[^\]]*\])?\{(fontspec|unicode-math)\}/.test(source) ? "xelatex" : "pdflatex";
+  return /\\usepackage(\[[^\]]*\])?\{(fontspec|unicode-math)\}/.test(source) ? "xelatex" : hasTexDistribution() ? "pdflatex" : "tectonic";
 }
 
 async function detectMainFile(root, files) {
@@ -124,7 +125,7 @@ async function detectMainFile(root, files) {
     const source = await readFile(path.join(root, file), "utf8");
     if (/^\s*\\documentclass/m.test(source)) return { mainFile: file, engine: detectEngine(source) };
   }
-  return { mainFile: texFiles[0] ?? null, engine: "pdflatex" };
+  return { mainFile: texFiles[0] ?? null, engine: hasTexDistribution() ? "pdflatex" : "tectonic" };
 }
 
 function recentProjectsFile() {
@@ -167,6 +168,11 @@ async function loadProject(root, activeFile) {
   await rememberProject(root);
   await saveCheckpoint("Beim Öffnen");
   return { name: path.basename(root), files, mainFile, engine, activeFile: active, content };
+}
+
+function tectonicPath() {
+  const root = app.isPackaged ? process.resourcesPath : path.join(electronDir, "..", "vendor");
+  return path.join(root, "tectonic", "tectonic.exe");
 }
 
 function buildFolder() {
@@ -295,6 +301,7 @@ function registerProjectHandlers() {
       mainFile,
       engine,
       outputDir: buildFolder(),
+      tectonicPath: tectonicPath(),
       signal: compileAbort.signal,
       onProgress: (message) => event.sender.send("project:compile-progress", message),
     });
@@ -564,11 +571,34 @@ function createWindow() {
   window.loadURL(isDev ? DEV_URL : `${APP_URL}/index.html`);
 }
 
+// Asks before installing. The check is the only request the app makes on its own.
+async function checkForUpdates() {
+  const { autoUpdater } = updater;
+  autoUpdater.autoDownload = false;
+  autoUpdater.on("error", () => {});
+  autoUpdater.on("update-available", async ({ version }) => {
+    const { response } = await dialog.showMessageBox({
+      message: `SynapTeX ${version} ist verfügbar. Jetzt herunterladen?`,
+      buttons: ["Herunterladen", "Später"],
+    });
+    if (response === 0) autoUpdater.downloadUpdate();
+  });
+  autoUpdater.on("update-downloaded", async () => {
+    const { response } = await dialog.showMessageBox({
+      message: "Das Update ist bereit. Jetzt neu starten?",
+      buttons: ["Neu starten", "Später"],
+    });
+    if (response === 0) autoUpdater.quitAndInstall();
+  });
+  await autoUpdater.checkForUpdates().catch(() => {});
+}
+
 app.whenReady().then(() => {
   if (!isDev) serveStaticExport();
   registerProjectHandlers();
   registerChatHandlers();
   createWindow();
+  if (app.isPackaged) checkForUpdates();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

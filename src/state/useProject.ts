@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import type { CompileResult, Engine, OpenedProject, OutlineItem } from "@/types/desktop";
 
-export const ENGINES: Engine[] = ["pdflatex", "xelatex", "lualatex"];
+export const ENGINES: Engine[] = ["tectonic", "pdflatex", "xelatex", "lualatex"];
 
 const INITIAL_DOCUMENT = String.raw`\documentclass{article}
 \usepackage[utf8]{inputenc}

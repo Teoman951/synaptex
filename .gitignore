@@ -51,3 +51,6 @@ next-env.d.ts
 
 # IDE
 .idea/workspace.xml
+
+# downloaded by scripts/fetch-tectonic.mjs
+/vendor/
