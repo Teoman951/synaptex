@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { EditorView } from "@uiw/react-codemirror";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { PaneHeader } from "@/components/layout/PaneHeader";
@@ -18,6 +18,30 @@ const LatexEditor = dynamic(() => import("@/components/editor/LatexEditor"), {
 
 const AUTO_COMPILE_KEY = "synaptex.autoCompile";
 const AUTO_SAVE_DELAY_MS = 1500;
+const CONTEXT_CHARS = 6000;
+const FONT_SIZE_KEY = "synaptex.editorFontSize";
+const SPLIT_KEY = "synaptex.editorShare";
+const MIN_FONT_SIZE = 10;
+const MAX_FONT_SIZE = 28;
+const MIN_SHARE = 0.2;
+const MAX_SHARE = 0.8;
+
+function readNumber(key: string, fallback: number) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    return Number(window.localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function storeValue(key: string, value: number) {
+  try {
+    window.localStorage.setItem(key, String(value));
+  } catch {
+    // The setting still applies for this session.
+  }
+}
 
 function readAutoCompile() {
   try {
@@ -34,6 +58,10 @@ export function Workspace() {
   const [autoCompile, setAutoCompile] = useState(
     () => typeof window !== "undefined" && readAutoCompile(),
   );
+  const [fontSize, setFontSize] = useState(() => readNumber(FONT_SIZE_KEY, 14));
+  const [editorShare, setEditorShare] = useState(() => readNumber(SPLIT_KEY, 0.5));
+  const [layoutVersion, setLayoutVersion] = useState(0);
+  const panesRef = useRef<HTMLDivElement>(null);
   const onRenderError = useCallback(() => setRenderFailed(true), []);
   const editorRef = useRef<EditorView | null>(null);
   const pendingJumpRef = useRef<{ file: string; line: number } | null>(null);
@@ -53,6 +81,24 @@ export function Workspace() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   });
+
+  function changeFontSize(next: number) {
+    setFontSize(next);
+    storeValue(FONT_SIZE_KEY, next);
+  }
+
+  function dragSplitter(event: PointerEvent<HTMLDivElement>) {
+    const panes = panesRef.current;
+    if (!panes || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    const box = panes.getBoundingClientRect();
+    const share = (event.clientX - box.left) / box.width;
+    setEditorShare(Math.min(MAX_SHARE, Math.max(MIN_SHARE, share)));
+  }
+
+  function finishSplitterDrag() {
+    storeValue(SPLIT_KEY, editorShare);
+    setLayoutVersion((version) => version + 1);
+  }
 
   function startCompile() {
     setRenderFailed(false);
@@ -78,9 +124,13 @@ export function Workspace() {
 
   function getEditorContext() {
     const view = editorRef.current;
-    if (!view) return content;
-    const { from, to } = view.state.selection.main;
-    return from === to ? content : view.state.sliceDoc(from, to);
+    const file = project.activeFile;
+    if (!view) return { file, text: content };
+    const { from, to, head } = view.state.selection.main;
+    if (from !== to) return { file, text: view.state.sliceDoc(from, to) };
+    // Without a selection, send the part around the cursor.
+    const start = Math.max(0, head - CONTEXT_CHARS / 2);
+    return { file, text: content.slice(start, start + CONTEXT_CHARS) };
   }
 
   function getEditorSelection() {
@@ -174,15 +224,46 @@ export function Workspace() {
           onRestoreCheckpoint={project.restoreCheckpoint}
           onSelectOutline={jumpTo}
         />
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col border-r border-line bg-black">
-          <PaneHeader title={project.isDirty ? `${project.activeFile} •` : project.activeFile} />
+        <div ref={panesRef} className="flex min-h-0 min-w-0 flex-1">
+        <section style={{ width: `${editorShare * 100}%` }} className="flex min-h-0 min-w-0 shrink-0 flex-col bg-black">
+          <PaneHeader title={project.isDirty ? `${project.activeFile} •` : project.activeFile}>
+            <button
+              type="button"
+              aria-label="Schrift verkleinern"
+              disabled={fontSize <= MIN_FONT_SIZE}
+              onClick={() => changeFontSize(fontSize - 1)}
+              className="px-2 hover:text-accent disabled:opacity-40"
+            >
+              A−
+            </button>
+            <span className="w-6 text-center">{fontSize}</span>
+            <button
+              type="button"
+              aria-label="Schrift vergrößern"
+              disabled={fontSize >= MAX_FONT_SIZE}
+              onClick={() => changeFontSize(fontSize + 1)}
+              className="px-2 hover:text-accent disabled:opacity-40"
+            >
+              A+
+            </button>
+          </PaneHeader>
           <div className="min-h-0 flex-1">
-            <LatexEditor value={content} onChange={project.setContent} onReady={onEditorReady} />
+            <LatexEditor value={content} onChange={project.setContent} onReady={onEditorReady} fontSize={fontSize} />
           </div>
         </section>
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          title="Ziehen ändert die Breite"
+          onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
+          onPointerMove={dragSplitter}
+          onPointerUp={finishSplitterDrag}
+          className="w-1 shrink-0 cursor-col-resize touch-none bg-line hover:bg-accent"
+        />
         <section className="min-h-0 min-w-0 flex-1">
           <PdfPreview
             result={project.compileResult}
+            layoutVersion={layoutVersion}
             onRenderError={onRenderError}
             engine={project.engine}
             onEngineChange={project.setEngine}
@@ -200,6 +281,7 @@ export function Workspace() {
             onAutoCompileChange={changeAutoCompile}
           />
         </section>
+        </div>
       </main>
     </div>
   );

@@ -322,7 +322,7 @@ function registerProjectHandlers() {
 }
 
 const SYSTEM_PROMPT =
-  "Du hilfst beim Schreiben von LaTeX-Dokumenten. Antworte auf Deutsch und knapp. " +
+  "Du hilfst beim Schreiben von LaTeX-Dokumenten. Du bekommst den Dokumenttext mit jeder Frage und kannst ihn lesen. Antworte auf Deutsch und knapp. " +
   "Gib LaTeX-Code, der ins Dokument soll, immer als Codeblock mit drei Backticks aus.";
 const MAX_CONTEXT_CHARS = 6000;
 const RECENT_MESSAGES = 8;
@@ -379,13 +379,21 @@ function conversationsFolder() {
   return path.join(app.getPath("userData"), "conversations", key);
 }
 
-function promptFor(conversation, context) {
-  const system = [SYSTEM_PROMPT];
-  if (conversation.summary) system.push(`Bisheriger Verlauf: ${conversation.summary}`);
-  system.push(`Aktueller Ausschnitt:\n${String(context).slice(0, MAX_CONTEXT_CHARS)}`);
+// Small models overlook system messages, so the text sits in the question itself.
+function promptFor(conversation, { file, text }) {
+  const system = conversation.summary
+    ? `${SYSTEM_PROMPT}\n\nBisheriger Verlauf: ${conversation.summary}`
+    : SYSTEM_PROMPT;
+  const recent = conversation.messages.slice(-RECENT_MESSAGES);
+  const question = recent.at(-1);
+  const excerpt = String(text).slice(0, MAX_CONTEXT_CHARS);
   return [
-    { role: "system", content: system.join("\n\n") },
-    ...conversation.messages.slice(-RECENT_MESSAGES),
+    { role: "system", content: system },
+    ...recent.slice(0, -1),
+    {
+      role: "user",
+      content: `Das ist der aktuelle Text aus ${file}:\n\n${excerpt}\n\nMeine Frage dazu: ${question.content}`,
+    },
   ];
 }
 
@@ -568,6 +576,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 500,
     backgroundColor: "#0b0d12",
+    icon: path.join(electronDir, "..", "assets", "icon.png"),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(electronDir, "preload.cjs"),

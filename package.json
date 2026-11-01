@@ -1,6 +1,6 @@
 {
   "name": "synaptex",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -15,6 +15,7 @@
     "fflate": "^0.8.3"
   },
   "devDependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/language": "^6.13.1",
     "@codemirror/legacy-modes": "^6.5.5",
     "@tailwindcss/turbopack": "^4",
@@ -42,12 +43,14 @@
     "appId": "io.github.synaptex.app",
     "productName": "SynapTeX",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "assets"
     },
     "files": [
       "electron/**",
       "out/**",
-      "package.json"
+      "package.json",
+      "assets/icon.png"
     ],
     "win": {
       "target": "nsis"

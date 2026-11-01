@@ -1,18 +1,21 @@
 "use client";
 
+import { autocompletion } from "@codemirror/autocomplete";
 import { StreamLanguage } from "@codemirror/language";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
 import CodeMirror, { type EditorView } from "@uiw/react-codemirror";
+import { latexCompletions } from "@/components/editor/latexCompletions";
 
-const extensions = [StreamLanguage.define(stex)];
+const extensions = [StreamLanguage.define(stex), autocompletion({ override: [latexCompletions] })];
 
 interface LatexEditorProps {
   value: string;
   onChange: (value: string) => void;
   onReady: (view: EditorView) => void;
+  fontSize: number;
 }
 
-export default function LatexEditor({ value, onChange, onReady }: LatexEditorProps) {
+export default function LatexEditor({ value, onChange, onReady, fontSize }: LatexEditorProps) {
   return (
     <CodeMirror
       value={value}
@@ -21,8 +24,9 @@ export default function LatexEditor({ value, onChange, onReady }: LatexEditorPro
       extensions={extensions}
       theme="dark"
       height="100%"
-      className="h-full text-sm"
-      basicSetup={{ lineNumbers: true, indentOnInput: true }}
+      className="h-full"
+      style={{ fontSize }}
+      basicSetup={{ lineNumbers: true, indentOnInput: true, autocompletion: false }}
       aria-label="LaTeX-Quelltext"
     />
   );

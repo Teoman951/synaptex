@@ -114,6 +114,7 @@ function ProblemItem({
 
 interface PdfPreviewProps {
   result: CompileResult | null;
+  layoutVersion: number;
   onRenderError: () => void;
   engine: Engine;
   onEngineChange: (engine: Engine) => void;
@@ -130,6 +131,7 @@ interface PdfPreviewProps {
 
 export function PdfPreview({
   result,
+  layoutVersion,
   onRenderError,
   engine,
   onEngineChange,
@@ -168,20 +170,20 @@ export function PdfPreview({
     return () => {
       cancelled = true;
     };
-  }, [pdf, zoom, onRenderError]);
+  }, [pdf, zoom, layoutVersion, onRenderError]);
 
   const zoomButton = "size-6 rounded text-sm hover:bg-surface disabled:opacity-40";
 
   return (
     <div className="relative flex h-full flex-col bg-canvas">
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-line px-3">
+      <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-2 border-b border-line px-3 py-1 whitespace-nowrap">
         <button
           type="button"
           onClick={onCompile}
           disabled={isCompiling}
           className="rounded-lg bg-accent px-3 py-1 text-xs font-medium text-canvas disabled:opacity-60"
         >
-          {isCompiling ? "Kompiliert..." : "PDF kompilieren"}
+          {isCompiling ? "Kompiliert..." : "Kompilieren"}
         </button>
         {isCompiling && (
           <button

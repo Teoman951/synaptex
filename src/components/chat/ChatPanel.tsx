@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import { diffLines } from "@/lib/lineDiff";
-import type { ChatMessage, Conversation, ConversationSummary } from "@/types/desktop";
+import type { ChatMessage, Conversation, ConversationSummary, EditorContext } from "@/types/desktop";
 
 const GIGABYTE = 1024 ** 3;
 const NOTICE_BYTES = GIGABYTE;
@@ -16,7 +16,7 @@ const CHARS_PER_TOKEN = 4;
 const CRITICAL_BYTES = 5 * GIGABYTE;
 
 // A rough estimate: the real token count depends on the model.
-function contextShare(conversation: Conversation, context: string) {
+function contextShare(conversation: Conversation, context: EditorContext) {
   const messageChars = conversation.messages
     .slice(-RECENT_MESSAGES)
     .reduce((sum, message) => sum + message.content.length, 0);
@@ -24,7 +24,7 @@ function contextShare(conversation: Conversation, context: string) {
     SYSTEM_PROMPT_CHARS +
     messageChars +
     (conversation.summary?.length ?? 0) +
-    Math.min(context.length, MAX_CONTEXT_CHARS);
+    Math.min(context.text.length, MAX_CONTEXT_CHARS);
   return Math.min(1, chars / CHARS_PER_TOKEN / CONTEXT_TOKENS);
 }
 
@@ -95,7 +95,7 @@ function Proposal({ before, after, onConfirm, onCancel }: ProposalProps) {
 
 interface ChatPanelProps {
   projectName: string | null;
-  getContext: () => string;
+  getContext: () => EditorContext;
   getSelection: () => string;
   onApply: (code: string) => void;
 }
@@ -263,7 +263,20 @@ export function ChatPanel({ projectName, getContext, getSelection, onApply }: Ch
                 <MessageBody text={message.content} onApply={propose} />
               </div>
             ))}
-            {pendingReply !== null && <MessageBody text={pendingReply || "Denkt nach..."} onApply={propose} />}
+            {pendingReply === "" && (
+              <p role="status" className="flex items-center gap-1 text-muted">
+                Denkt nach
+                {[0, 150, 300].map((delay) => (
+                  <span
+                    key={delay}
+                    aria-hidden
+                    style={{ animationDelay: `${delay}ms` }}
+                    className="size-1 animate-bounce rounded-full bg-accent"
+                  />
+                ))}
+              </p>
+            )}
+            {pendingReply && <MessageBody text={pendingReply} onApply={propose} />}
           </div>
         </>
       )}

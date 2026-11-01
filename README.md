@@ -1,6 +1,10 @@
 <div align="center">
 
+<img src="assets/icon.png" alt="SynapTeX-Logo" width="112" height="112" />
+
 # SynapTeX <sup><em>0.1</em></sup>
+
+**Deutsch** | [English](docs/readme/README.en.md) | [Türkçe](docs/readme/README.tr.md) | [Español](docs/readme/README.es.md) | [Français](docs/readme/README.fr.md)
 
 **Lokaler LaTeX-Editor für den Desktop, mit eigener KI auf deinem Rechner.**
 

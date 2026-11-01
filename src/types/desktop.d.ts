@@ -42,6 +42,11 @@ export interface ModelOverview {
   models: AiModel[];
 }
 
+export interface EditorContext {
+  file: string;
+  text: string;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -126,7 +131,7 @@ export interface SynaptexDesktopApi {
   loadConversation: (id: string) => Promise<Conversation>;
   deleteConversation: (id: string) => Promise<void>;
   compressConversation: (id: string) => Promise<Conversation>;
-  sendMessage: (id: string, text: string, context: string) => Promise<Conversation>;
+  sendMessage: (id: string, text: string, context: EditorContext) => Promise<Conversation>;
   listCheckpoints: () => Promise<Checkpoint[]>;
   restoreCheckpoint: (id: string, activeFile: string) => Promise<OpenedProject>;
   locateSource: (
