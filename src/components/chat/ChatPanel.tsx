@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getDesktopApi } from "@/lib/desktop";
 import { diffLines } from "@/lib/lineDiff";
-import type { ChatMessage, Conversation, ConversationSummary, EditorContext } from "@/types/desktop";
+import type { ChatMessage, Conversation, ConversationSummary, EditorContext, EditTarget } from "@/types/desktop";
 
 const GIGABYTE = 1024 ** 3;
 const NOTICE_BYTES = GIGABYTE;
@@ -47,7 +47,7 @@ function MessageBody({ text, onApply }: { text: string; onApply: (code: string) 
           onClick={() => onApply(code)}
           className="w-full border-t border-line p-1 text-xs text-accent hover:bg-canvas"
         >
-          Übernehmen
+          Änderung ansehen
         </button>
       </div>
     );
@@ -62,20 +62,20 @@ const DIFF_STYLES = {
 const DIFF_PREFIX = { same: " ", removed: "-", added: "+" };
 
 interface ProposalProps {
-  before: string;
+  target: EditTarget;
   after: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-function Proposal({ before, after, onConfirm, onCancel }: ProposalProps) {
+function Proposal({ target, after, onConfirm, onCancel }: ProposalProps) {
   return (
     <div className="border-t border-line p-2">
       <p className="mb-1 font-medium">
-        {before ? "Markierung ersetzen" : "Am Cursor einfügen"}
+        {target.file}, Zeile {target.line}: {target.before ? "Text ersetzen" : "Text einfügen"}
       </p>
       <pre className="max-h-48 overflow-auto rounded border border-line font-mono text-[11px]">
-        {diffLines(before, after).map((line, index) => (
+        {diffLines(target.before, after).map((line, index) => (
           <div key={index} className={DIFF_STYLES[line.type]}>
             {DIFF_PREFIX[line.type]} {line.text}
           </div>
@@ -86,7 +86,7 @@ function Proposal({ before, after, onConfirm, onCancel }: ProposalProps) {
           Anwenden
         </button>
         <button type="button" onClick={onCancel} className="text-muted hover:text-accent">
-          Abbrechen
+          Ablehnen
         </button>
       </div>
     </div>
@@ -96,11 +96,11 @@ function Proposal({ before, after, onConfirm, onCancel }: ProposalProps) {
 interface ChatPanelProps {
   projectName: string | null;
   getContext: () => EditorContext;
-  getSelection: () => string;
-  onApply: (code: string) => void;
+  getTarget: () => EditTarget | null;
+  onApply: (target: EditTarget, code: string) => boolean;
 }
 
-export function ChatPanel({ projectName, getContext, getSelection, onApply }: ChatPanelProps) {
+export function ChatPanel({ projectName, getContext, getTarget, onApply }: ChatPanelProps) {
   const [isConfigured, setIsConfigured] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
@@ -108,7 +108,7 @@ export function ChatPanel({ projectName, getContext, getSelection, onApply }: Ch
   const [pendingReply, setPendingReply] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [proposal, setProposal] = useState<{ before: string; after: string } | null>(null);
+  const [proposal, setProposal] = useState<{ target: EditTarget; after: string } | null>(null);
 
   const refresh = useCallback(async () => {
     const api = getDesktopApi();
@@ -130,7 +130,8 @@ export function ChatPanel({ projectName, getContext, getSelection, onApply }: Ch
   const totalBytes = conversations.reduce((sum, item) => sum + item.bytes, 0);
 
   function propose(code: string) {
-    setProposal({ before: getSelection(), after: code });
+    const target = getTarget();
+    if (target) setProposal({ target, after: code });
   }
 
   async function run(action: () => Promise<void>) {
@@ -284,10 +285,11 @@ export function ChatPanel({ projectName, getContext, getSelection, onApply }: Ch
       {error && <p role="alert" className="px-3 pb-1 text-red-400">{error}</p>}
       {proposal && (
         <Proposal
-          before={proposal.before}
+          target={proposal.target}
           after={proposal.after}
           onConfirm={() => {
-            onApply(proposal.after);
+            const applied = onApply(proposal.target, proposal.after);
+            setError(applied ? null : "Die Stelle hat sich geändert. Bitte sieh dir die Änderung neu an.");
             setProposal(null);
           }}
           onCancel={() => setProposal(null)}

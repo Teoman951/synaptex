@@ -187,6 +187,7 @@ export function useProject() {
     openFolder: () => openWith(() => getDesktopApi()?.openFolder()),
     openRecent: (id: string) => openWith(() => getDesktopApi()?.openRecent(id)),
     newDocument: () => resetTo(true),
+    createFromTemplate: (id: string) => openWith(() => getDesktopApi()?.createFromTemplate(id)),
     close: () => resetTo(false),
     importZip: () => openWith(() => getDesktopApi()?.importZip()),
     save,

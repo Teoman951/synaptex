@@ -10,6 +10,7 @@ import { ProjectSidebar } from "@/components/layout/ProjectSidebar";
 import { PdfPreview } from "@/components/preview/PdfPreview";
 import { getDesktopApi } from "@/lib/desktop";
 import { useProject } from "@/state/useProject";
+import type { EditTarget } from "@/types/desktop";
 
 // CodeMirror needs the DOM, so it must never render during the static export.
 const LatexEditor = dynamic(() => import("@/components/editor/LatexEditor"), {
@@ -133,18 +134,27 @@ export function Workspace() {
     return { file, text: content.slice(start, start + CONTEXT_CHARS) };
   }
 
-  function getEditorSelection() {
+  function getEditTarget(): EditTarget | null {
     const view = editorRef.current;
-    if (!view) return "";
+    if (!view) return null;
     const { from, to } = view.state.selection.main;
-    return view.state.sliceDoc(from, to);
+    return {
+      file: project.activeFile,
+      line: view.state.doc.lineAt(from).number,
+      from,
+      to,
+      before: view.state.sliceDoc(from, to),
+    };
   }
 
-  function applyToEditor(code: string) {
+  // Applies only if the target is still what the preview showed.
+  function applyToEditor(target: EditTarget, code: string) {
     const view = editorRef.current;
-    if (!view) return;
-    view.dispatch(view.state.replaceSelection(code));
+    if (!view || target.file !== project.activeFile) return false;
+    if (view.state.sliceDoc(target.from, target.to) !== target.before) return false;
+    view.dispatch({ changes: { from: target.from, to: target.to, insert: code } });
     view.focus();
+    return true;
   }
 
   function moveToLine(view: EditorView, line: number) {
@@ -185,6 +195,7 @@ export function Workspace() {
       <ProjectHome
         error={project.error}
         onNew={project.newDocument}
+        onCreateFromTemplate={project.createFromTemplate}
         onOpenFolder={project.openFolder}
         onOpenFile={project.openFile}
         onImportZip={project.importZip}
@@ -208,7 +219,7 @@ export function Workspace() {
             <ChatPanel
               projectName={project.project?.name ?? null}
               getContext={getEditorContext}
-              getSelection={getEditorSelection}
+              getTarget={getEditTarget}
               onApply={applyToEditor}
             />
           }

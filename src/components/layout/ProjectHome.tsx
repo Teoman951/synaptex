@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { ModelPicker } from "@/components/chat/ModelPicker";
 import { Logo } from "@/components/layout/Logo";
 import { getDesktopApi } from "@/lib/desktop";
-import type { RecentProject } from "@/types/desktop";
+import type { ProjectTemplate, RecentProject } from "@/types/desktop";
 
 const dateFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
 
 interface ProjectHomeProps {
   error: string | null;
   onNew: () => void;
+  onCreateFromTemplate: (id: string) => void;
   onOpenFolder: () => void;
   onOpenFile: () => void;
   onImportZip: () => void;
@@ -20,6 +21,7 @@ interface ProjectHomeProps {
 export function ProjectHome({
   error,
   onNew,
+  onCreateFromTemplate,
   onOpenFolder,
   onOpenFile,
   onImportZip,
@@ -27,10 +29,12 @@ export function ProjectHome({
 }: ProjectHomeProps) {
   const [projects, setProjects] = useState<RecentProject[]>([]);
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<"projects" | "models">("projects");
+  const [view, setView] = useState<"projects" | "models" | "templates">("projects");
+  const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
 
   useEffect(() => {
     getDesktopApi()?.recentProjects().then(setProjects);
+    getDesktopApi()?.listTemplates().then(setTemplates);
   }, []);
 
   const visible = projects.filter((project) =>
@@ -65,6 +69,39 @@ export function ProjectHome({
         </nav>
       </aside>
 
+      {view === "templates" && (
+        <main className="min-w-0 flex-1 overflow-auto bg-surface/40">
+          <header className="flex items-center gap-3 border-b border-line p-4">
+            <h1 className="mr-auto text-base font-semibold">Neues Projekt</h1>
+            <button type="button" onClick={onNew} className="rounded-full bg-surface px-3 py-1.5 text-xs font-medium hover:text-accent">
+              Leeres Dokument
+            </button>
+            <button type="button" onClick={() => setView("projects")} className="text-xs text-muted hover:text-accent">
+              Abbrechen
+            </button>
+          </header>
+          {[...new Set(templates.map((template) => template.category))].map((category) => (
+            <section key={category} className="p-4">
+              <h2 className="mb-2 text-xs font-medium text-muted">{category}</h2>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
+                {templates
+                  .filter((template) => template.category === category)
+                  .map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => onCreateFromTemplate(template.id)}
+                      className="rounded-lg border border-line bg-surface p-4 text-left text-sm hover:border-accent"
+                    >
+                      {template.name}
+                    </button>
+                  ))}
+              </div>
+            </section>
+          ))}
+        </main>
+      )}
+
       {view === "models" && (
         <main className="min-w-0 flex-1 overflow-auto bg-surface/40">
           <h1 className="border-b border-line p-4 text-base font-semibold">KI-Modelle</h1>
@@ -96,7 +133,7 @@ export function ProjectHome({
           ))}
           <button
             type="button"
-            onClick={onNew}
+            onClick={() => setView("templates")}
             className="rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-canvas"
           >
             + Neu

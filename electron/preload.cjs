@@ -53,5 +53,8 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   locateSource: (mainFile, page, x, y) => ipcRenderer.invoke("project:locate-source", mainFile, page, x, y),
   savePdf: (mainFile) => ipcRenderer.invoke("project:save-pdf", mainFile),
   installServer: () => ipcRenderer.invoke("ai:install-server"),
+  listTemplates: () => ipcRenderer.invoke("template:list"),
+  createFromTemplate: (id) => ipcRenderer.invoke("template:create", id),
+  searchProject: (query) => ipcRenderer.invoke("project:search", query),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });

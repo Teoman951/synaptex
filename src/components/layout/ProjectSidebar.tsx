@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { ProjectSearch } from "@/components/layout/ProjectSearch";
 import { FileList } from "@/components/layout/FileList";
 import { HistoryPanel } from "@/components/layout/HistoryPanel";
 import type { OutlineItem } from "@/types/desktop";
@@ -33,6 +34,7 @@ export function ProjectSidebar({
   onSelectOutline,
 }: ProjectSidebarProps) {
   const [tab, setTab] = useState<"files" | "chat" | "history">("files");
+  const [isSearching, setIsSearching] = useState(false);
   const tabs = [
     { id: "files", label: "Dateien" },
     { id: "chat", label: "Unterhaltungen" },
@@ -78,8 +80,27 @@ export function ProjectSidebar({
 
       {tab === "files" && (
       <>
+      <div className="flex justify-end px-3 pt-2">
+        <button
+          type="button"
+          aria-label="Projekt durchsuchen"
+          aria-pressed={isSearching}
+          title="Projekt durchsuchen"
+          onClick={() => setIsSearching(!isSearching)}
+          className={isSearching ? "text-accent" : "text-muted hover:text-accent"}
+        >
+          <svg aria-hidden viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        <FileList files={files} activeFile={activeFile} mainFile={mainFile} onSelect={onSelectFile} />
+        {isSearching ? (
+          <ProjectSearch onSelect={onSelectOutline} />
+        ) : (
+          <FileList files={files} activeFile={activeFile} mainFile={mainFile} onSelect={onSelectFile} />
+        )}
       </div>
 
       <h2 className="border-t border-line px-3 pt-3 text-xs font-medium">Gliederung</h2>

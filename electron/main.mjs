@@ -18,6 +18,7 @@ import {
 import { downloadFile, installLlamaServer, MODEL_CATALOG } from "./downloads.mjs";
 import { detectModels, findGguf, withDetails } from "./models.mjs";
 import { buildOutline } from "./outline.mjs";
+import { TEMPLATES } from "./templates.mjs";
 import { extractZip } from "./zipImport.mjs";
 
 const electronDir = path.dirname(fileURLToPath(import.meta.url));
@@ -77,6 +78,7 @@ const IGNORED_FOLDERS = new Set(["node_modules"]);
 const FILE_LIMIT = 5000;
 const RECENT_LIMIT = 50;
 const MAX_THUMBNAIL_LENGTH = 500_000;
+const MAX_SEARCH_RESULTS = 200;
 let projectRoot = null;
 let compileAbort = null;
 
@@ -285,6 +287,40 @@ function registerProjectHandlers() {
     });
     if (canceled || !filePath) return;
     await copyFile(path.join(buildFolder(), name), filePath);
+  });
+
+  ipcMain.handle("template:list", () =>
+    TEMPLATES.map(({ id, name, category }) => ({ id, name, category })),
+  );
+
+  ipcMain.handle("template:create", async (event, id) => {
+    const template = TEMPLATES.find((item) => item.id === id);
+    if (!template) throw new Error("Unknown template");
+    const { canceled, filePath } = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), {
+      title: "Neuen Projektordner anlegen",
+      defaultPath: template.name,
+    });
+    if (canceled || !filePath) return null;
+    // Fails when the folder exists, so nothing is overwritten.
+    await mkdir(filePath);
+    await writeFile(path.join(filePath, "main.tex"), template.source, "utf8");
+    return loadProject(filePath);
+  });
+
+  ipcMain.handle("project:search", async (_event, query) => {
+    const needle = String(query).toLowerCase();
+    if (!needle || !projectRoot) return [];
+    const matches = [];
+    for (const file of await listTextFiles(projectRoot)) {
+      const source = await readFile(resolveInProject(file), "utf8");
+      for (const [index, text] of source.split(/\r?\n/).entries()) {
+        if (matches.length >= MAX_SEARCH_RESULTS) return matches;
+        if (text.toLowerCase().includes(needle)) {
+          matches.push({ file, line: index + 1, text: text.trim().slice(0, 120) });
+        }
+      }
+    }
+    return matches;
   });
 
   ipcMain.handle("project:read", (_event, file) => readFile(resolveInProject(file), "utf8"));

@@ -42,6 +42,15 @@ export interface ModelOverview {
   models: AiModel[];
 }
 
+// Where a suggested change would land.
+export interface EditTarget {
+  file: string;
+  line: number;
+  from: number;
+  to: number;
+  before: string;
+}
+
 export interface EditorContext {
   file: string;
   text: string;
@@ -73,6 +82,18 @@ export interface Checkpoint {
   label: string;
   createdAt: number;
   fileCount: number;
+}
+
+export interface ProjectTemplate {
+  id: string;
+  name: string;
+  category: string;
+}
+
+export interface SearchMatch {
+  file: string;
+  line: number;
+  text: string;
 }
 
 export interface CompileError {
@@ -142,6 +163,9 @@ export interface SynaptexDesktopApi {
   ) => Promise<{ file: string; line: number } | null>;
   savePdf: (mainFile: string) => Promise<void>;
   installServer: () => Promise<void>;
+  listTemplates: () => Promise<ProjectTemplate[]>;
+  createFromTemplate: (id: string) => Promise<OpenedProject | null>;
+  searchProject: (query: string) => Promise<SearchMatch[]>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 
