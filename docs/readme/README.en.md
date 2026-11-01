@@ -36,6 +36,14 @@ Write and compile LaTeX without a cloud. Your documents and AI conversations sta
 
 Small local models make mistakes. Check suggestions before applying them.
 
+### Projects and AI at a glance
+
+- Templates, ZIP import and export, file tree, tabs, project search, plus new files, folders and images, also by dragging from Explorer
+- Editor only, both or PDF only views, checkpoints with restore
+- Interface in German, English, Turkish, Spanish and French
+- Local AI with one click, optional cloud AI with your own API key (Claude, ChatGPT, Gemini)
+- MCP for Claude Desktop and ChatGPT Desktop: read shared projects and propose changes for you to approve
+
 ## Security
 
 LaTeX documents can read files outside the project while compiling, and with Tectonic also write there. SynapTeX warns about suspicious commands but cannot reliably detect targeted attacks. Only compile projects from sources you trust.

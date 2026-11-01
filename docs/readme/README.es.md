@@ -36,6 +36,14 @@ Escribe y compila LaTeX sin la nube. Tus documentos y conversaciones con la IA s
 
 Los modelos locales pequeños cometen errores. Revisa las sugerencias antes de aplicarlas.
 
+### Proyectos e IA de un vistazo
+
+- Plantillas, importación y exportación ZIP, árbol de archivos, pestañas, búsqueda en el proyecto y nuevos archivos, carpetas e imágenes, también arrastrando desde el Explorador
+- Vistas solo editor, ambos o solo PDF, puntos de control con restauración
+- Interfaz en alemán, inglés, turco, español y francés
+- IA local con un clic, IA en la nube opcional con tu propia clave de API (Claude, ChatGPT, Gemini)
+- MCP para Claude Desktop y ChatGPT Desktop: leer proyectos compartidos y proponer cambios que tú apruebas
+
 ## Seguridad
 
 Los documentos LaTeX pueden leer archivos fuera del proyecto al compilar y, con Tectonic, también escribir allí. SynapTeX avisa de comandos sospechosos, pero no detecta de forma fiable ataques dirigidos. Compila solo proyectos de fuentes de confianza.

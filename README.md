@@ -55,6 +55,14 @@ Schreibe und kompiliere LaTeX ohne Cloud. Deine Dokumente und KI-Unterhaltungen 
 
 Kleine lokale Modelle machen Fehler. Prüfe Vorschläge, bevor du sie übernimmst.
 
+### Projekte und KI im Überblick
+
+- Vorlagen, ZIP-Import und -Export, Dateibaum, Tabs, Projektsuche sowie neue Dateien, Ordner und Bilder, auch per Ziehen aus dem Explorer
+- Ansichten nur Editor, beides oder nur PDF, Checkpoints mit Wiederherstellen
+- Oberfläche auf Deutsch, Englisch, Türkisch, Spanisch und Französisch
+- Lokale KI per Klick, optional Cloud-KI mit eigenem API-Schlüssel (Claude, ChatGPT, Gemini)
+- MCP für Claude Desktop und ChatGPT Desktop: freigegebene Projekte lesen und Änderungen vorschlagen, die du bestätigst
+
 ## Sicherheit
 
 LaTeX-Dokumente können beim Kompilieren Dateien außerhalb des Projekts lesen, und mit Tectonic auch dorthin schreiben. SynapTeX warnt bei verdächtigen Befehlen, kann gezielte Angriffe aber nicht zuverlässig erkennen. Kompiliere nur Projekte aus Quellen, denen du vertraust.

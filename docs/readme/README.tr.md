@@ -36,6 +36,14 @@ LaTeX'i bulut olmadan yaz ve derle. Belgelerin ve yapay zekâ sohbetlerin bilgis
 
 Küçük yerel modeller hata yapar. Önerileri uygulamadan önce kontrol et.
 
+### Projeler ve yapay zekâ
+
+- Şablonlar, ZIP içe ve dışa aktarma, dosya ağacı, sekmeler, proje araması; yeni dosya, klasör ve görseller, Gezgin'den sürükleyerek de
+- Yalnızca editör, ikisi birlikte veya yalnızca PDF görünümü, geri yüklenebilir kontrol noktaları
+- Almanca, İngilizce, Türkçe, İspanyolca ve Fransızca arayüz
+- Tek tıkla yerel yapay zekâ, isteğe bağlı kendi API anahtarınla bulut yapay zekâ (Claude, ChatGPT, Gemini)
+- Claude Desktop ve ChatGPT Desktop için MCP: paylaşılan projeleri okuma ve onayına sunulan değişiklikler önerme
+
 ## Güvenlik
 
 LaTeX belgeleri derleme sırasında proje dışındaki dosyaları okuyabilir, Tectonic ile oraya yazabilir de. SynapTeX şüpheli komutlarda uyarır ancak hedefli saldırıları güvenilir biçimde algılayamaz. Yalnızca güvendiğin kaynaklardan gelen projeleri derle.

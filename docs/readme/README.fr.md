@@ -36,6 +36,14 @@
 
 Les petits modèles locaux font des erreurs. Vérifiez les suggestions avant de les appliquer.
 
+### Projets et IA en bref
+
+- Modèles, import et export ZIP, arborescence, onglets, recherche dans le projet, nouveaux fichiers, dossiers et images, aussi par glisser-déposer depuis l'Explorateur
+- Vues éditeur seul, les deux ou PDF seul, points de contrôle avec restauration
+- Interface en allemand, anglais, turc, espagnol et français
+- IA locale en un clic, IA cloud facultative avec votre propre clé API (Claude, ChatGPT, Gemini)
+- MCP pour Claude Desktop et ChatGPT Desktop : lire les projets partagés et proposer des modifications à approuver
+
 ## Sécurité
 
 Les documents LaTeX peuvent lire des fichiers hors du projet à la compilation et, avec Tectonic, y écrire aussi. SynapTeX signale les commandes suspectes, mais ne détecte pas de façon fiable les attaques ciblées. Ne compilez que des projets de sources fiables.
