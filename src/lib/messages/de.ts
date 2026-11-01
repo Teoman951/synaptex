@@ -132,4 +132,7 @@ export const de: Record<string, string> = {
   mcpShared: "Freigegebene Projekte",
   mcpLog: "Zugriffe",
   mcpNoLog: "Noch keine Zugriffe.",
+  previewSize: "Vorschaugröße",
+  listView: "Liste",
+  gridView: "Raster",
 };

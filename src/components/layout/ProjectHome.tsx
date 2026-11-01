@@ -8,6 +8,28 @@ import { getDesktopApi } from "@/lib/desktop";
 import { changeLanguage, language, LANGUAGES, type Language, t } from "@/lib/i18n";
 import type { ProjectTemplate, RecentProject } from "@/types/desktop";
 
+const CARD_SIZES = { S: 140, M: 200, L: 280 };
+const CARD_SIZE_KEY = "synaptex.cardSize";
+const LIST_VIEW_KEY = "synaptex.listView";
+type CardSize = keyof typeof CARD_SIZES;
+
+function readCardSize(): CardSize {
+  try {
+    const stored = window.localStorage.getItem(CARD_SIZE_KEY);
+    return stored === "S" || stored === "L" ? stored : "M";
+  } catch {
+    return "M";
+  }
+}
+
+function readListView() {
+  try {
+    return window.localStorage.getItem(LIST_VIEW_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 const dateFormat = new Intl.DateTimeFormat(language, { dateStyle: "medium" });
 
 interface ProjectHomeProps {
@@ -33,6 +55,45 @@ export function ProjectHome({
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"projects" | "models" | "connections" | "templates">("projects");
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
+  const [cardSize, setCardSize] = useState(readCardSize);
+  const [listView, setListView] = useState(readListView);
+  const gridStyle = {
+    gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_SIZES[cardSize]}px, 1fr))`,
+  };
+
+  function toggleListView() {
+    setListView(!listView);
+    try {
+      window.localStorage.setItem(LIST_VIEW_KEY, String(!listView));
+    } catch {
+      // The view still applies for this session.
+    }
+  }
+
+  function changeCardSize(next: CardSize) {
+    setCardSize(next);
+    try {
+      window.localStorage.setItem(CARD_SIZE_KEY, next);
+    } catch {
+      // The size still applies for this session.
+    }
+  }
+
+  const sizePicker = (
+    <div role="group" aria-label={t("previewSize")} className="flex overflow-hidden rounded-full bg-surface">
+      {(Object.keys(CARD_SIZES) as CardSize[]).map((size) => (
+        <button
+          key={size}
+          type="button"
+          aria-pressed={size === cardSize}
+          onClick={() => changeCardSize(size)}
+          className={`px-2.5 py-1.5 text-xs ${size === cardSize ? "bg-foreground text-canvas" : "text-muted hover:text-accent"}`}
+        >
+          {size}
+        </button>
+      ))}
+    </div>
+  );
 
   useEffect(() => {
     getDesktopApi()?.recentProjects().then(setProjects);
@@ -88,6 +149,7 @@ export function ProjectHome({
         <main className="min-w-0 flex-1 overflow-auto bg-surface/40">
           <header className="flex items-center gap-3 border-b border-line p-4">
             <h1 className="mr-auto text-base font-semibold">{t("newProject")}</h1>
+            {sizePicker}
             <button type="button" onClick={onNew} className="rounded-full bg-surface px-3 py-1.5 text-xs font-medium hover:text-accent">
               {t("emptyDocument")}
             </button>
@@ -98,7 +160,7 @@ export function ProjectHome({
           {[...new Set(templates.map((template) => template.category))].map((category) => (
             <section key={category} className="p-4">
               <h2 className="mb-2 text-xs font-medium text-muted">{t(`category.${category}`)}</h2>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
+              <div style={gridStyle} className="grid gap-3">
                 {templates
                   .filter((template) => template.category === category)
                   .map((template) => (
@@ -106,9 +168,11 @@ export function ProjectHome({
                       key={template.id}
                       type="button"
                       onClick={() => onCreateFromTemplate(template.id)}
-                      className="rounded-lg border border-line bg-surface p-4 text-left text-sm hover:border-accent"
+                      className="overflow-hidden rounded-lg border border-line bg-surface text-left text-sm hover:border-accent"
                     >
-                      {t(`template.${template.id}`)}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`templates/${template.id}.png`} alt="" className="aspect-[3/4] w-full bg-white object-contain" />
+                      <span className="block p-2">{t(`template.${template.id}`)}</span>
                     </button>
                   ))}
               </div>
@@ -135,6 +199,14 @@ export function ProjectHome({
       <main className="flex min-w-0 flex-1 flex-col bg-surface/40">
         <header className="flex flex-wrap items-center gap-2 border-b border-line p-4">
           <h1 className="mr-auto text-base font-semibold">{t("yourProjects")}</h1>
+          <button
+            type="button"
+            onClick={toggleListView}
+            className="rounded-full bg-surface px-3 py-1.5 text-xs font-medium hover:text-accent"
+          >
+            {t(listView ? "gridView" : "listView")}
+          </button>
+          {!listView && sizePicker}
           <input
             type="search"
             value={query}
@@ -174,24 +246,30 @@ export function ProjectHome({
               {t(projects.length === 0 ? "noProjects" : "noMatches")}
             </p>
           )}
-          {visible.map((project) => (
-            <button
-              key={project.id}
-              type="button"
-              onClick={() => onOpenRecent(project.id)}
-              className="flex w-full items-center gap-4 border-b border-line px-4 py-2 text-left text-sm hover:bg-surface"
-            >
-              {project.thumbnail ? (
-                // A local data URL, so next/image has nothing to optimize.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={project.thumbnail} alt="" className="h-10 w-7 shrink-0 rounded-sm bg-white object-cover object-top" />
-              ) : (
-                <span aria-hidden className="h-10 w-7 shrink-0 rounded-sm bg-foreground" />
-              )}
-              <span className="min-w-0 flex-1 truncate">{project.name}</span>
-              <span className="text-xs text-muted">{dateFormat.format(project.openedAt)}</span>
-            </button>
-          ))}
+          <div style={listView ? undefined : gridStyle} className={listView ? "" : "grid gap-3 p-4"}>
+            {visible.map((project) => (
+              <button
+                key={project.id}
+                type="button"
+                onClick={() => onOpenRecent(project.id)}
+                className={
+                  listView
+                    ? "flex w-full items-center gap-4 border-b border-line px-4 py-2 text-left text-sm hover:bg-surface"
+                    : "overflow-hidden rounded-lg border border-line bg-surface text-left text-sm hover:border-accent"
+                }
+              >
+                {project.thumbnail ? (
+                  // A local data URL, so next/image has nothing to optimize.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={project.thumbnail} alt="" className={`bg-white object-cover object-top ${listView ? "h-12 w-9 shrink-0 rounded-sm" : "aspect-[3/4] w-full"}`} />
+                ) : (
+                  <span aria-hidden className={`block bg-foreground ${listView ? "h-12 w-9 shrink-0 rounded-sm" : "aspect-[3/4] w-full"}`} />
+                )}
+                <span className={`block truncate ${listView ? "min-w-0 flex-1" : "px-2 pt-2"}`}>{project.name}</span>
+                <span className={`block text-xs text-muted ${listView ? "" : "px-2 pb-2"}`}>{dateFormat.format(project.openedAt)}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </main>
       )}

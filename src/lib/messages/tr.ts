@@ -132,4 +132,7 @@ export const tr: Record<string, string> = {
   mcpShared: "Paylaşılan projeler",
   mcpLog: "Erişim kaydı",
   mcpNoLog: "Henüz erişim yok.",
+  previewSize: "Önizleme boyutu",
+  listView: "Liste",
+  gridView: "Izgara",
 };

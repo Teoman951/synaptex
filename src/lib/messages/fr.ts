@@ -132,4 +132,7 @@ export const fr: Record<string, string> = {
   mcpShared: "Projets partagés",
   mcpLog: "Journal des accès",
   mcpNoLog: "Aucun accès pour l'instant.",
+  previewSize: "Taille de l'aperçu",
+  listView: "Liste",
+  gridView: "Grille",
 };

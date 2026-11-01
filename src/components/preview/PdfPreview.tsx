@@ -11,14 +11,16 @@ import type { CompileError, CompileResult, Engine } from "@/types/desktop";
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.25;
-const THUMBNAIL_WIDTH = 120;
+const THUMBNAIL_WIDTH = 720;
 
 function saveThumbnail(page: HTMLCanvasElement) {
   const thumbnail = window.document.createElement("canvas");
   thumbnail.width = THUMBNAIL_WIDTH;
   thumbnail.height = (page.height / page.width) * THUMBNAIL_WIDTH;
-  thumbnail.getContext("2d")?.drawImage(page, 0, 0, thumbnail.width, thumbnail.height);
-  return getDesktopApi()?.saveThumbnail(thumbnail.toDataURL("image/jpeg", 0.7));
+  const context = thumbnail.getContext("2d");
+  if (context) context.imageSmoothingQuality = "high";
+  context?.drawImage(page, 0, 0, thumbnail.width, thumbnail.height);
+  return getDesktopApi()?.saveThumbnail(thumbnail.toDataURL("image/jpeg", 0.85));
 }
 
 // The pdf.js worker is shared, and overlapping documents can stall it.
