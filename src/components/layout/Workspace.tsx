@@ -81,12 +81,16 @@ export function Workspace() {
     return from === to ? content : view.state.sliceDoc(from, to);
   }
 
+  function getEditorSelection() {
+    const view = editorRef.current;
+    if (!view) return "";
+    const { from, to } = view.state.selection.main;
+    return view.state.sliceDoc(from, to);
+  }
+
   function applyToEditor(code: string) {
     const view = editorRef.current;
     if (!view) return;
-    const hasSelection = !view.state.selection.main.empty;
-    const question = hasSelection ? "Markierten Text ersetzen?" : "An der Cursorposition einfügen?";
-    if (!window.confirm(question)) return;
     view.dispatch(view.state.replaceSelection(code));
     view.focus();
   }
@@ -131,6 +135,7 @@ export function Workspace() {
             <ChatPanel
               projectName={project.project?.name ?? null}
               getContext={getEditorContext}
+              getSelection={getEditorSelection}
               onApply={applyToEditor}
             />
           }

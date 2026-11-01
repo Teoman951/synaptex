@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ModelPicker } from "@/components/chat/ModelPicker";
 import { getDesktopApi } from "@/lib/desktop";
+import { diffLines } from "@/lib/lineDiff";
 import type { ChatMessage, Conversation, ConversationSummary } from "@/types/desktop";
 
 const GIGABYTE = 1024 ** 3;
@@ -35,13 +36,53 @@ function MessageBody({ text, onApply }: { text: string; onApply: (code: string) 
   });
 }
 
+const DIFF_STYLES = {
+  same: "text-muted",
+  removed: "bg-red-500/15 text-red-300",
+  added: "bg-green-500/15 text-green-300",
+};
+const DIFF_PREFIX = { same: " ", removed: "-", added: "+" };
+
+interface ProposalProps {
+  before: string;
+  after: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function Proposal({ before, after, onConfirm, onCancel }: ProposalProps) {
+  return (
+    <div className="border-t border-line p-2">
+      <p className="mb-1 font-medium">
+        {before ? "Markierung ersetzen" : "Am Cursor einfügen"}
+      </p>
+      <pre className="max-h-48 overflow-auto rounded border border-line font-mono text-[11px]">
+        {diffLines(before, after).map((line, index) => (
+          <div key={index} className={DIFF_STYLES[line.type]}>
+            {DIFF_PREFIX[line.type]} {line.text}
+          </div>
+        ))}
+      </pre>
+      <div className="mt-2 flex gap-3">
+        <button type="button" onClick={onConfirm} className="rounded bg-accent px-2 py-1 font-medium text-canvas">
+          Anwenden
+        </button>
+        <button type="button" onClick={onCancel} className="text-muted hover:text-accent">
+          Abbrechen
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface ChatPanelProps {
   projectName: string | null;
   getContext: () => string;
+  getSelection: () => string;
   onApply: (code: string) => void;
 }
 
-export function ChatPanel({ projectName, getContext, onApply }: ChatPanelProps) {
+export function ChatPanel({ projectName, getContext, getSelection, onApply }: ChatPanelProps) {
   const [isConfigured, setIsConfigured] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
@@ -49,6 +90,7 @@ export function ChatPanel({ projectName, getContext, onApply }: ChatPanelProps) 
   const [pendingReply, setPendingReply] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [proposal, setProposal] = useState<{ before: string; after: string } | null>(null);
 
   const refresh = useCallback(async () => {
     const api = getDesktopApi();
@@ -68,6 +110,10 @@ export function ChatPanel({ projectName, getContext, onApply }: ChatPanelProps) 
   }, [refresh, projectName]);
 
   const totalBytes = conversations.reduce((sum, item) => sum + item.bytes, 0);
+
+  function propose(code: string) {
+    setProposal({ before: getSelection(), after: code });
+  }
 
   async function run(action: () => Promise<void>) {
     setError(null);
@@ -191,15 +237,26 @@ export function ChatPanel({ projectName, getContext, onApply }: ChatPanelProps) 
             )}
             {current.messages.map((message, index) => (
               <div key={index} className={`mb-3 ${message.role === "user" ? "text-accent" : ""}`}>
-                <MessageBody text={message.content} onApply={onApply} />
+                <MessageBody text={message.content} onApply={propose} />
               </div>
             ))}
-            {pendingReply !== null && <MessageBody text={pendingReply || "Denkt nach..."} onApply={onApply} />}
+            {pendingReply !== null && <MessageBody text={pendingReply || "Denkt nach..."} onApply={propose} />}
           </div>
         </>
       )}
 
       {error && <p role="alert" className="px-3 pb-1 text-red-400">{error}</p>}
+      {proposal && (
+        <Proposal
+          before={proposal.before}
+          after={proposal.after}
+          onConfirm={() => {
+            onApply(proposal.after);
+            setProposal(null);
+          }}
+          onCancel={() => setProposal(null)}
+        />
+      )}
       <div className="border-t border-line p-2">
         <textarea
           value={input}
