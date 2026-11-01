@@ -216,6 +216,7 @@ export interface SynaptexDesktopApi {
   createFile: (file: string, content?: string) => Promise<string>;
   createFolder: (folder: string) => Promise<void>;
   addImages: () => Promise<string[]>;
+  importFiles: (files: File[]) => Promise<string[]>;
   compile: (mainFile: string, engine: Engine) => Promise<CompileResult>;
 }
 

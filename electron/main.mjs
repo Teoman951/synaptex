@@ -405,6 +405,24 @@ function registerProjectHandlers() {
     await mkdir(resolveNewPath(folder), { recursive: true });
   });
 
+  // Dropped files: images go to bilder/, text files to the project root.
+  ipcMain.handle("project:import-files", async (_event, sources) => {
+    if (!projectRoot || !Array.isArray(sources)) return [];
+    const added = [];
+    for (const source of sources.map(String)) {
+      const { name, ext } = path.parse(source);
+      const isImage = IMAGE_EXTENSIONS.has(ext.toLowerCase());
+      if (!isImage && !TEXT_EXTENSIONS.has(ext.toLowerCase())) continue;
+      const folder = isImage ? path.join(projectRoot, "bilder") : projectRoot;
+      await mkdir(folder, { recursive: true });
+      let target = path.join(folder, `${name}${ext}`);
+      for (let copy = 2; existsSync(target); copy++) target = path.join(folder, `${name}-${copy}${ext}`);
+      await copyFile(source, target);
+      added.push(path.relative(projectRoot, target).replaceAll(path.sep, "/"));
+    }
+    return added;
+  });
+
   ipcMain.handle("project:add-images", async (event) => {
     if (!projectRoot) return [];
     const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {

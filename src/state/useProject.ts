@@ -165,6 +165,16 @@ export function useProject() {
     });
   }
 
+  // Resolves to the project paths of the files that were added.
+  async function importFiles(files: File[]) {
+    let added: string[] = [];
+    await attempt(async () => {
+      added = (await getDesktopApi()?.importFiles(files)) ?? [];
+      await refreshFiles();
+    });
+    return added;
+  }
+
   function addImages() {
     return attempt(async () => {
       await getDesktopApi()?.addImages();
@@ -255,6 +265,7 @@ export function useProject() {
     createFile,
     createFolder,
     addImages,
+    importFiles,
     content,
     setContent,
     engine,

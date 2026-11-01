@@ -2,7 +2,7 @@
 
 import { language, t } from "@/lib/i18n";
 import dynamic from "next/dynamic";
-import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type DragEvent, type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { EditorView } from "@uiw/react-codemirror";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { PaneHeader } from "@/components/layout/PaneHeader";
@@ -171,6 +171,22 @@ export function Workspace() {
     view.focus();
   }
 
+  async function dropFiles(event: DragEvent<HTMLElement>, intoEditor: boolean) {
+    if (event.dataTransfer.files.length === 0 || !project.project) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const point = { x: event.clientX, y: event.clientY };
+    const added = await project.importFiles([...event.dataTransfer.files]);
+    const image = added.find((file) => /\.(png|jpe?g|pdf)$/i.test(file));
+    const view = editorRef.current;
+    if (!intoEditor || !image || !view) return;
+    const position = view.posAtCoords(point) ?? view.state.selection.main.head;
+    view.dispatch({
+      changes: { from: position, insert: `\\includegraphics[width=0.8\\textwidth]{${image}}` },
+    });
+    view.focus();
+  }
+
   function moveToLine(view: EditorView, line: number) {
     const { from } = view.state.doc.line(Math.min(line, view.state.doc.lines));
     view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
@@ -227,7 +243,11 @@ export function Workspace() {
           {error}
         </p>
       )}
-      <main className="flex min-h-0 flex-1">
+      <main
+        className="flex min-h-0 flex-1"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => dropFiles(event, false)}
+      >
         <ProjectSidebar
           chat={
             <ChatPanel
@@ -257,7 +277,12 @@ export function Workspace() {
           onSelectOutline={jumpTo}
         />
         <div ref={panesRef} className="flex min-h-0 min-w-0 flex-1">
-        <section style={{ width: `${editorShare * 100}%` }} className="flex min-h-0 min-w-0 shrink-0 flex-col bg-black">
+        <section
+          style={{ width: `${editorShare * 100}%` }}
+          onDragOver={(event) => event.preventDefault()}
+          onDropCapture={(event) => dropFiles(event, true)}
+          className="flex min-h-0 min-w-0 shrink-0 flex-col bg-black"
+        >
           <PaneHeader
             title={
               <div role="tablist" className="flex gap-1 overflow-x-auto">

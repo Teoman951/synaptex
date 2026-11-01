@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 // The only bridge between renderer and main process. Future IPC goes here as
 // narrow, named functions; never expose ipcRenderer itself.
@@ -75,5 +75,7 @@ contextBridge.exposeInMainWorld("synaptexDesktop", {
   createFile: (file, content) => ipcRenderer.invoke("project:create-file", file, content),
   createFolder: (folder) => ipcRenderer.invoke("project:create-folder", folder),
   addImages: () => ipcRenderer.invoke("project:add-images"),
+  // Paths exist only here: the sandboxed page cannot read them from a File.
+  importFiles: (files) => ipcRenderer.invoke("project:import-files", files.map(webUtils.getPathForFile)),
   compile: (mainFile, engine) => ipcRenderer.invoke("project:compile", mainFile, engine),
 });
