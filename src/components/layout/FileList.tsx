@@ -81,24 +81,40 @@ export function FileList({ files, removedFiles, images, folders, activeFile, mai
             </div>
           );
         })}
-        {items.map(({ name, path, isImage }) => (
-          <button
-            key={path}
-            type="button"
-            title={isImage ? t("insertImage") : path}
-            disabled={removedFiles.includes(path)}
-            onClick={() => (isImage ? onInsertImage(path) : onSelect(path))}
-            style={indent}
-            className={`block w-full truncate py-1 pr-3 text-left text-xs hover:text-accent ${
-              path === activeFile ? "bg-surface text-accent" : "text-muted"
-            } ${removedFiles.includes(path) ? "line-through opacity-50" : ""}`}
-          >
-            {isImage ? "🖼 " : ""}
-            {name}
-            {path === mainFile && t("mainFile")}
-            {removedFiles.includes(path) && ` (${t("fileRemoved")})`}
-          </button>
-        ))}
+        {items.map(({ name, path, isImage }) =>
+          isImage ? (
+            // A click must not change the document, so inserting has its own button.
+            <div key={path} style={indent} className="flex items-center gap-2 py-1 pr-3 text-xs text-muted">
+              <span title={path} className="min-w-0 flex-1 truncate">
+                🖼 {name}
+              </span>
+              <button
+                type="button"
+                title={t("insertImage")}
+                onClick={() => onInsertImage(path)}
+                className="shrink-0 text-accent hover:underline"
+              >
+                {t("insert")}
+              </button>
+            </div>
+          ) : (
+            <button
+              key={path}
+              type="button"
+              title={path}
+              disabled={removedFiles.includes(path)}
+              onClick={() => onSelect(path)}
+              style={indent}
+              className={`block w-full truncate py-1 pr-3 text-left text-xs hover:text-accent ${
+                path === activeFile ? "bg-surface text-accent" : "text-muted"
+              } ${removedFiles.includes(path) ? "line-through opacity-50" : ""}`}
+            >
+              {name}
+              {path === mainFile && t("mainFile")}
+              {removedFiles.includes(path) && ` (${t("fileRemoved")})`}
+            </button>
+          ),
+        )}
       </>
     );
   }
